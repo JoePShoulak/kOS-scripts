@@ -52,6 +52,11 @@ function InterceptScore {
 
 function CircularizeAtApoapsis {
   declare data is list(0).
+  // TODO: Improve this refinement
+  // I'm thinking, do it in 3 steps
+  // Step 1, get the apo to the height of the taget's orbit (prograde only)
+  // Step 2, get the burn happening at the right time for coarse intercept (time only)
+  // Step 3, do a final high-precision refinement using a combination score (all variables?)
   set data to ImproveParameters(data, EccentricityScore_Apoapsis@).
   ExecuteManeuver(node(time:seconds + ship:orbit:eta:apoapsis, 0, 0, data[0])).
 }
