@@ -11,14 +11,16 @@ InitTerminal().
 PRINT "Welcome to the " + ship:name + " kOS autpilot!".
 
 PRINT "[ ]  1. Takeoff"  AT(0, 2).
-PRINT "[ ]  2. Stabilize"  AT(0, 3).
+PRINT "[ ]  2. Gain Speed"  AT(0, 3).
+PRINT "[ ]  3. Reach Orbit"  AT(0, 4).
+
+wait 3.
 
 Takeoff().
 LevelFlightToSpeed().
 PitchToOrbit().
 
-
-runPath("0:/common/hohmann.ks").
+// runPath("0:/common/hohmann.ks").
 
 // Rendezvous("Kerbin Alpha").
 

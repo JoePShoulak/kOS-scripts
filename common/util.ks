@@ -3,6 +3,7 @@
 function InitTerminal {
   CLEARSCREEN.
   CORE:PART:GETMODULE("kOSProcessor"):DOEVENT("Open Terminal").
+  set terminal:width to 100.
 }
 
 function QuickOrbit {
