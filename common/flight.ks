@@ -2,6 +2,7 @@
 runOncePath("0:/common/util.ks").
 runOncePath("0:/common/mechjeb.ks").
 runOncePath("0:/common/stats.ks").
+runOncePath("0:/common/maneuvers.ks").
 
 function SSTOToOrbit {
   print " ".
@@ -47,8 +48,10 @@ function Takeoff {
   until timestamp() - t > 3 { FlightAscentStats(). }
 
   Sequence(1, "Takeoff - Ascending to " + safe_alt + "m.").
+  set warpmode to "PHYSICS".
+  set warp to 3.
   until altitude > safe_alt { FlightAscentStats(). }
-  LOCK THROTTLE to 1.0.
+  set warp to 0.
 
   Sequence(1, "Takeoff - Safe altitude reached. Takeoff complete.", SEQ["COMPLETE"]).
 }
@@ -60,9 +63,11 @@ function LevelFlightToSpeed {
   parameter hdg is 90.
 
   Sequence(2, "Gain Speed - Flying level until: " + speed + "m/s...").
+  set warpmode to "PHYSICS".
+  set warp to 1.
   LOCK STEERING to HEADING(hdg, 2).
   until ship:airspeed > speed { FlightAscentStats(). }
-
+  set warp to 0.
   Sequence(2, "Gain Speed - Target speed reached.", SEQ["COMPLETE"]).
 }
 
@@ -70,24 +75,48 @@ function LevelFlightToSpeed {
 function PitchToOrbit {
   parameter target_alt is 80000.
   parameter hdg is 90.
+  set warpmode to "PHYSICS".
 
   // Pitch up until we run out of thrust
   Sequence(3, "Reach Orbit - Pitching up for altitude.").
+  set warp to 1.
   lock steering to heading(hdg, 15).
   until ship:thrust < 100 { FlightAscentStats(). }
 
   // Toggle out engines to closed cycle mode
   Sequence(3, "Reach Orbit - Switching engines to Closed Cycle mode.").
+  set warp to 2.
   LIST ENGINES IN my_engines.
   for eng in my_engines { eng:togglemode(). }
   until apoapsis > target_alt { FlightAscentStats(). }
+  lock throttle to 0.0.
+
+  // Touch space
+  Sequence(3, "Reach Orbit - Coasting to space.").
+  lock steering to prograde.
+  set warp to 3.
+  until altitude > ship:orbit:body:atm:height {
+    if apoapsis < target_alt {
+      lock throttle to (choose 0.05 if throttle < 0.05 else throttle * 2.0).
+    } else {
+      lock throttle to 0.0.
+    }
+
+    FlightAscentStats(). 
+  }
+  set warp to 0.
+
+  // Get to a stable orbit
+  Sequence(3, "Reach Orbit - Circularizing.").
+  Circularize().
 
   // Actually enter orbit
-  Sequence(3, "Reach Orbit - Let MechJeb handle the rest of the orbit.").
-  unlock steering.
-  unlock throttle.
-  MJQuickOrbit(target_alt).
+  // Sequence(3, "Reach Orbit - Let MechJeb handle the rest of the orbit.").
+  // unlock steering.
+  // unlock throttle.
+  // MJQuickOrbit(target_alt).
 
-  until periapsis > 70000 and ship:thrust < 1 { FlightAscentStats(). }
+  // Completion
+  until periapsis > ship:orbit:body:atm:height and ship:thrust < 1 { FlightAscentStats(). }
   Sequence(3, "Reach Orbit - Orbit achieved!", SEQ["COMPLETE"]).
 }

@@ -2,14 +2,18 @@
 
 // INCLUDES
 runOncePath("0:/common/flight.ks").
-runOncePath("0:/common/rendezvous.ks").
 runOncePath("0:/common/util.ks").
 runOncePath("0:/common/menu.ks").
 
 // MAIN
+wait 3. // in case we want to telnet in before init
+
 InitTerminal("Welcome to the " + ship:name + " kOS autpilot!").
 
-AutoLaunchMenu(SSTOToOrbit@).
+declare delegates is list(SSTOToOrbit@, { SHUTDOWN. }).
+declare labels is list("Fly to orbit.", "Manual control.").
+
+AutoLaunchMenu(delegates, labels).
 
 // Rendezvous("Kerbin Alpha").
 

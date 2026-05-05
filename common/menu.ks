@@ -10,46 +10,59 @@ function MenuItem {
   PRINT "[" + (choose "x" if selected else " ") + "] " + text AT(0, number+1). 
 }
 
-function AutoLaunchMenu {
-  parameter launch_function.
-  parameter manual_function is { shutdown. }.
-  parameter launch_name is "Auto Launch.".
-  parameter manual_name is "Manual Launch.".
+function DrawMenu {
+  parameter labels.
+  parameter s is 1.
 
-  function DrawMenu {
-    parameter s is 1.
-
-    MenuItem(1, launch_name, s = 1).
-    MenuItem(2, manual_name, s = 2).
+  declare n is 0.
+  until n = labels:length() {
+    MenuItem(n+1, labels[n], s = n+1).
+    set n to n + 1.
   }
+}
 
-  // MAIN
-  DrawMenu().
-
+function GetSelection {
+  parameter labels.
   declare selection is 1.
   declare t is timestamp().
 
-  terminal:input:clear().
+  DrawMenu(labels).
 
-  until timestamp() - t > 30 {
+  declare ch is "".
+  until timestamp() - t > 30 or ch = terminal:input:enter {
     if terminal:input:haschar() {
-      declare ch is terminal:input:getchar().
+      set ch to terminal:input:getchar().
 
-      if ch = terminal:input:upcursorone { set selection to 1. }
-      else if ch = terminal:input:downcursorone { set selection to 2. }
-      else if ch = terminal:input:enter { break. }
+      if ch = terminal:input:upcursorone { set selection to max(selection - 1, 1). }
+      else if ch = terminal:input:downcursorone { set selection to min(selection + 1, labels:length). }
 
-      DrawMenu(selection).
+      DrawMenu(labels, selection).
     }
 
     declare time_remaining is ceiling(30 - (timestamp() - t):seconds()).
     PRINT "Make a selection using the arrow keys and enter. Autoselecting in " + time_remaining + "s." AT(0,5).
   }
 
-  declare bl is ClearLine(2).
-  ClearLine(3, bl).
-  ClearLine(5, bl).
+  ClearMenu(labels).
 
-  if selection = 1 { launch_function(). }
-  else if selection = 2 { manual_function(). }
+  return selection.
+}
+
+function ClearMenu {
+  parameter labels.
+
+  declare bl is ClearLine(3).
+  declare n is 2.
+  until n > labels:length {
+    ClearLine(n+2).
+    set n to n + 1.
+  }
+  ClearLine(n+3, bl).
+}
+
+function AutoLaunchMenu {
+  parameter delegates.
+  parameter labels.
+
+  delegates[GetSelection(labels)-1](). // Call the function associated with the selection
 }
