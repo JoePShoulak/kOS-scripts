@@ -4,23 +4,12 @@
 runOncePath("0:/common/flight.ks").
 runOncePath("0:/common/rendezvous.ks").
 runOncePath("0:/common/util.ks").
+runOncePath("0:/common/menu.ks").
 
 // MAIN
-InitTerminal().
+InitTerminal("Welcome to the " + ship:name + " kOS autpilot!").
 
-PRINT "Welcome to the " + ship:name + " kOS autpilot!".
-
-PRINT "[ ]  1. Takeoff"  AT(0, 2).
-PRINT "[ ]  2. Gain Speed"  AT(0, 3).
-PRINT "[ ]  3. Reach Orbit"  AT(0, 4).
-
-wait 3.
-
-Takeoff().
-LevelFlightToSpeed().
-PitchToOrbit().
-
-// runPath("0:/common/hohmann.ks").
+AutoLaunchMenu(SSTOToOrbit@).
 
 // Rendezvous("Kerbin Alpha").
 

@@ -1,93 +1,93 @@
 // flight.ks
 runOncePath("0:/common/util.ks").
+runOncePath("0:/common/mechjeb.ks").
+runOncePath("0:/common/stats.ks").
 
-declare global hdg is 90.
+function SSTOToOrbit {
+  print " ".
+  print "Performing Sequence: SSTO to Orbit.".
 
-function UpdateStats {
-  declare padding is floor(terminal:width/4).
-  declare row is terminal:height - 3.
+  Sequence(1, "Takeoff", SEQ["IDLE"]).
+  Sequence(2, "Gain Speed", SEQ["IDLE"]).
+  Sequence(3, "Reach Orbit", SEQ["IDLE"]).
 
-  PRINT ("Speed: "    + round(ship:airspeed, 2) + "m/s" ):padright(padding) at(0, row).
-  PRINT ("Altitude: " + round(altitude/1000, 2) + "km"  ):padright(padding) at(padding, row).
-  PRINT ("Apoapsis: " + round(apoapsis/1000, 2) + "km"  ):padright(padding) at(2*padding, row).
-  PRINT ("Thrust: "   + round(ship:thrust, 2) + "N"     ):padright(padding) at(3*padding, row).
+  wait 1.
 
-  PRINT ("V. Speed: "   + round(ship:verticalspeed, 2) + "m/s"):padright(padding) at(0, row+1).
-  PRINT ("Q: "          + round(ship:q, 2) + "ATM"            ):padright(padding) at(padding, row+1).
-  PRINT ("Periapsis: "  + round(periapsis/1000, 2) + "km"     ):padright(padding) at (2*padding, row+1).
-  PRINT ("Engines: "    + ship:engines[0]:mode()              ):padright(padding) at (3*padding, row+1).
-  wait 0.001.
+  Takeoff().
+  LevelFlightToSpeed().
+  PitchToOrbit().
 }
 
-
-// TAKEOFF:
-//   Pitches the plane up until the wheels leave the ground
+// TAKEOFF
 function Takeoff {
   parameter pitch is 10.
   parameter safe_alt is 1000.
+  parameter hdg is 90.
 
   lock throttle to 1.0.
   LOCK STEERING to HEADING(hdg, 0).
 
   stage.
 
-  PRINT "[ ]  1. Takeoff - Ignition!":padright(100) at(0, 2).
+  Sequence(1, "Takeoff - Ignition!").
 
-  set a to timestamp().
-  until timestamp() - a > 3 { UpdateStats(). }
+  declare local t to timestamp().
+  until timestamp() - t > 3 { FlightAscentStats(). }
 
-  PRINT "[ ]  1. Takeoff - Gaining speed for takeoff.":padright(100) at(0, 2).
-  UNTIL ship:groundspeed > 100 { UpdateStats(). }
+  Sequence(1, "Takeoff - Gaining speed for takeoff.").
+  UNTIL ship:groundspeed > 100 { FlightAscentStats(). }
 
-  PRINT "[ ]  1. Takeoff - Pitching for takeoff.":padright(100) at(0, 2).
+  Sequence(1, "Takeoff - Pitching for takeoff.").
   LOCK STEERING to HEADING(hdg, pitch).
-  UNTIL altitude > 75 or verticalSpeed > 1 { UpdateStats(). }
+  UNTIL altitude > 75 or verticalSpeed > 1 { FlightAscentStats(). }
 
-  PRINT "[ ]  1. Takeoff - Airborne! Raising gear.":padright(100) at(0, 2).
+  Sequence(1, "Takeoff - Airborne! Raising gear.").
   SET gear to false.
-  set a to timestamp().
-  until timestamp() - a > 3 { UpdateStats(). }
+  set t to timestamp().
+  until timestamp() - t > 3 { FlightAscentStats(). }
 
-  PRINT ("[ ]  1. Takeoff - Ascending to " + safe_alt + "m."):padright(100) at(0, 2).
-  until altitude > safe_alt { UpdateStats(). }
+  Sequence(1, "Takeoff - Ascending to " + safe_alt + "m.").
+  until altitude > safe_alt { FlightAscentStats(). }
   LOCK THROTTLE to 1.0.
 
-  PRINT "[X]  1. Takeoff - Safe altitude reached. Takeoff complete.":padright(100) at(0, 2).
+  Sequence(1, "Takeoff - Safe altitude reached. Takeoff complete.", SEQ["COMPLETE"]).
 }
 
 // LEVEL FLIGHT TO SPEED:
 //   Performs a level flight until a given speed is reached.
 function LevelFlightToSpeed {
   parameter speed is 1000.
+  parameter hdg is 90.
 
-  PRINT "[ ]  2. Gain Speed - Flying level until: " + speed + "m/s...":padright(100)  AT(0, 3).
-
+  Sequence(2, "Gain Speed - Flying level until: " + speed + "m/s...").
   LOCK STEERING to HEADING(hdg, 2).
-  until ship:airspeed > speed { UpdateStats(). }
+  until ship:airspeed > speed { FlightAscentStats(). }
 
-  PRINT "[X]  2. Gain Speed - Target speed reached.":padright(100)  AT(0, 3).
+  Sequence(2, "Gain Speed - Target speed reached.", SEQ["COMPLETE"]).
 }
 
 // Time to get high
 function PitchToOrbit {
-  PRINT "[ ]  3. Reach Orbit - Pitching up for altitude.":padright(100)  AT(0, 4).
+  parameter target_alt is 80000.
+  parameter hdg is 90.
 
   // Pitch up until we run out of thrust
+  Sequence(3, "Reach Orbit - Pitching up for altitude.").
   lock steering to heading(hdg, 15).
-  until ship:thrust < 100 { UpdateStats(). }
+  until ship:thrust < 100 { FlightAscentStats(). }
 
   // Toggle out engines to closed cycle mode
-  PRINT "[ ]  3. Reach Orbit - Switching engines to Closed Cycle mode.":padright(100)  AT(0, 4).
+  Sequence(3, "Reach Orbit - Switching engines to Closed Cycle mode.").
   LIST ENGINES IN my_engines.
   for eng in my_engines { eng:togglemode(). }
-  until apoapsis > 80000 { UpdateStats(). }
+  until apoapsis > target_alt { FlightAscentStats(). }
 
   // Actually enter orbit
-  PRINT "[ ]  4. Reach Orbit - Let MechJeb handle the rest of the orbit.":padright(100)  AT(0, 4).
+  Sequence(3, "Reach Orbit - Let MechJeb handle the rest of the orbit.").
   unlock steering.
   unlock throttle.
-  QuickOrbit().
+  MJQuickOrbit(target_alt).
 
-  until periapsis > 70000 and ship:thrust < 1 { UpdateStats(). }
-  PRINT "[X]  4. Reach Orbit - Orbit achieved!":padright(100)  AT(0, 4).
+  until periapsis > 70000 and ship:thrust < 1 { FlightAscentStats(). }
+  Sequence(3, "Reach Orbit - Orbit achieved!", SEQ["COMPLETE"]).
 }

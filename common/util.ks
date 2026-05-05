@@ -1,55 +1,42 @@
 // INIT TERMINAL: 
 //   Clears and brings up the kOS Terminal in-game
 function InitTerminal {
+  parameter greeting is "".
+
   CLEARSCREEN.
   CORE:PART:GETMODULE("kOSProcessor"):DOEVENT("Open Terminal").
   set terminal:width to 100.
+
+  if greeting:length {print greeting. }
 }
 
-function QuickOrbit {
-  set mj  to addons:mj.
-  set asc to mj:ascent.
+function ClearLine {
+  parameter line.
+  parameter blank_line is " ".
 
-  // Basic target orbit
-  set asc:desiredaltitude    to 80000.
-  set asc:desiredinclination to 0.
+  until blank_line:length >= terminal:width { set blank_line to blank_line + " ". }
 
-  // Turn profile
-  set asc:turnstartaltitude  to 1500.
-  set asc:turnendaltitude    to 70000.
-  set asc:turnendangle       to 0.
-  set asc:turnshapeexponent  to 0.4.
+  PRINT blank_line AT (0,line).
 
-  // Roll profile
-  set asc:forceroll    to true.
-  set asc:verticalroll to 0.
-  set asc:turnroll     to 0.
+  return blank_line.
+}
 
-  // // Safety limits
-  // set asc:limitaoa                to true.
-  // set asc:maxaoa                  to 5.
-  // set asc:limitqaenabled          to true.
-  // set asc:limitqa                 to 45000.
-  // set asc:limittopreventoverheats to true.
+declare global SEQ is lexicon(
+  "IDLE", 0,
+  "ACTIVE", 1,
+  "COMPLETE", 2
+).
 
-  // // Autostage & fairings
-  // set asc:autostage                 to true.
-  // set asc:autostagelimit            to 5.
-  // set asc:autostagepredelay         to 0.5.
-  // set asc:autostagepostdelay        to 0.5.
-  // set asc:fairingmaxdynamicpressure to 25000.
-  // set asc:fairingminaltitude        to 30000.
+function Sequence {
+  parameter number.
+  parameter text.
+  parameter state is SEQ["ACTIVE"].
 
-  // QoL features
-  // set asc:autodeployantennas    to true.
-  // set asc:autodeploysolarpanels to true.
-  // set asc:skipcircularization   to false.
-  set asc:autowarp              to true.
-
-  set asc:enabled to true.
-
-  WAIT until ship:periapsis > 70000 and ship:thrust < 1.
-  print "Congrats! we're in orbit".
+  local msg is "[" + (
+    choose "X" if state = SEQ["COMPLETE"] else
+    choose "-" if state = SEQ["ACTIVE"] else " "
+  ) + "] " + number + ". " + text.
+  print msg:padright(terminal:width) at(0, number + 3).
 }
 
 function Alert {
