@@ -2,12 +2,6 @@
 
 runOncePath("0:/common/stats.ks").
 
-function calculateStartTime {
-  parameter mnv.
-
-  return time:seconds + mnv:eta - maneuverBurnTime(mnv) / 2.
-}
-
 function maneuverBurnTime {
   parameter mnv.
 
@@ -45,35 +39,12 @@ function isManeuverComplete {
   return false.
 }
 
-function MetricCirc {
-  parameter mnv.
-  return mnv:orbit:eccentricity.
-}
+function GenerateCandidates {
+  parameter data, step_size.
 
-function Score {
-  parameter data.
-  parameter metric.
-
-  local mnv is node(data[0], data[1], data[2], data[3]).
-  add mnv.
-  local result is metric(mnv).
-  remove mnv.
-
-  ManeuverStats(mnv, result).
-
-  return result.
-}
-
-function Improve {
-  parameter data.
-  parameter metric.
-  parameter step_size is 1.
-
-  local score_to_beat is Score(data, metric@).
-  local best_candidate is data.
   local candidates is list().
-
   local index is 0.
+
   until index >= data:length {
     local inc_candidate is data:copy().
     local dec_candidate is data:copy().
@@ -87,9 +58,17 @@ function Improve {
     set index to index + 1.
   }
 
-  for candidate in candidates {
-    local new_score to Score(candidate, metric@).
+  return candidates.
+}
 
+function Improve {
+  parameter data, Metric, step_size.
+
+  local score_to_beat is Metric(data).
+  local best_candidate is data.
+
+  for candidate in GenerateCandidates(data, step_size) {
+    local new_score to Metric(candidate).
     if new_score < score_to_beat {
       set score_to_beat to new_score.
       set best_candidate  to candidate.
@@ -99,25 +78,27 @@ function Improve {
   return best_candidate.
 }
 
-function CreateManeuver {
-  parameter metric.
-  parameter seed_time is 30.
+function ImproveParameters {
+  parameter data, Metric.
+  parameter step_list is list(100, 10, 1).
 
-  local mnv is list(time:seconds + seed_time, 0, 0, 0).
+  declare old_score is 2^64.
 
-  declare old_score is 0.
-  until false {
-    set old_score to Score(mnv, metric@).
-    set mnv to Improve(mnv, metric@).
-    if old_score <= Score(mnv, metric@) { break. }
+  for step_size in step_list {
+    until false {
+      set old_score to Metric(data).
+      set data to Improve(data, Metric@, step_size).
+      if old_score <= Metric(data) { break. }
+    }
   }
+
+  return data.
 }
 
 function ExecuteManeuver {
-  parameter data.
+  parameter mnv.
 
-  local mnv is node(data[0], data[1], data[2], data[3]).
-  local startTime is CalculateStartTime(mnv).
+  local startTime is time:seconds + mnv:eta - maneuverBurnTime(mnv) / 2.
   
   add mnv.
 
@@ -127,6 +108,8 @@ function ExecuteManeuver {
   lock throttle to 1.
   until IsManeuverComplete(mnv) { ManeuverStats(mnv). }
   lock throttle to 0.
+  unlock steering.
+  unlock throttle.
   
   remove mnv.
 }

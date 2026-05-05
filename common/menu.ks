@@ -23,13 +23,14 @@ function DrawMenu {
 
 function GetSelection {
   parameter labels.
+  parameter timeout is -1.
   declare selection is 1.
   declare t is timestamp().
 
   DrawMenu(labels).
 
   declare ch is "".
-  until timestamp() - t > 30 or ch = terminal:input:enter {
+  until ch = terminal:input:enter or (timeout > 0 and timestamp() - t > timeout) {
     if terminal:input:haschar() {
       set ch to terminal:input:getchar().
 
@@ -39,8 +40,12 @@ function GetSelection {
       DrawMenu(labels, selection).
     }
 
-    declare time_remaining is ceiling(30 - (timestamp() - t):seconds()).
-    PRINT "Make a selection using the arrow keys and enter. Autoselecting in " + time_remaining + "s." AT(0,5).
+    declare select_message is "Make a selection using the arrow keys and enter.".
+    if timeout > 0 {
+      declare time_remaining is ceiling(30 - (timestamp() - t):seconds()).
+      set select_message to select_message + " Autoselecting in " + time_remaining + "s.".
+    }
+    PRINT select_message AT(0,5).
   }
 
   ClearMenu(labels).
@@ -51,18 +56,19 @@ function GetSelection {
 function ClearMenu {
   parameter labels.
 
-  declare bl is ClearLine(3).
+  ClearLine(3).
   declare n is 2.
   until n > labels:length {
     ClearLine(n+2).
     set n to n + 1.
   }
-  ClearLine(n+3, bl).
+  ClearLine(n+3).
 }
 
-function AutoLaunchMenu {
+function DestinationMenu {
   parameter delegates.
   parameter labels.
+  parameter timeout is -1.
 
-  delegates[GetSelection(labels)-1](). // Call the function associated with the selection
+  delegates[GetSelection(labels, timeout)-1](). // Call the function associated with the selection
 }

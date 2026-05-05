@@ -30,15 +30,15 @@ function FlightAscentStats {
 
 function ManeuverStats {
   parameter mnv.
-  parameter score is "".
+  parameter score is -1.
 
   PrintStatNumber("Fuel",           ship:deltav:current,  "m/s",  0, 0).
   PrintStatNumber("ETA",            mnv:eta,              "s",    1, 0).
-  if not score = "" {
-    PrintStatText("Score",          score,                        2, 0). }
+  if score:length > 0 {
+    PrintStatNumber("Score",        score,                "",     2, 0). }
   PrintStatNumber("Thrust",         ship:thrust,          "N",    3, 0).
 
-  PrintStatNumber("dV - Total",     mnv:deltav,           "m/s",  0, 1).
+  PrintStatNumber("dV - Total",     mnv:deltav:mag,       "m/s",  0, 1).
   PrintStatNumber("dV - Prograde",  mnv:prograde,         "m/s",  1, 1).
   PrintStatNumber("dV - Radial",    mnv:radialout,        "m/s",  2, 1).
   PrintStatNumber("dV - Normal",    mnv:normal,           "m/s",  3, 1).

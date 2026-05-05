@@ -108,15 +108,8 @@ function PitchToOrbit {
 
   // Get to a stable orbit
   Sequence(3, "Reach Orbit - Circularizing.").
-  Circularize().
-
-  // Actually enter orbit
-  // Sequence(3, "Reach Orbit - Let MechJeb handle the rest of the orbit.").
-  // unlock steering.
-  // unlock throttle.
-  // MJQuickOrbit(target_alt).
+  CircularizeAtApoapsis().
 
   // Completion
-  until periapsis > ship:orbit:body:atm:height and ship:thrust < 1 { FlightAscentStats(). }
   Sequence(3, "Reach Orbit - Orbit achieved!", SEQ["COMPLETE"]).
 }

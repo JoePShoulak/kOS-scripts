@@ -12,13 +12,8 @@ function InitTerminal {
 
 function ClearLine {
   parameter line.
-  parameter blank_line is " ".
 
-  until blank_line:length >= terminal:width { set blank_line to blank_line + " ". }
-
-  PRINT blank_line AT (0,line).
-
-  return blank_line.
+  PRINT " ":padright(terminal:width) AT (0,line).
 }
 
 declare global SEQ is lexicon(
