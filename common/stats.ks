@@ -30,11 +30,11 @@ function FlightAscentStats {
 
 function ManeuverStats {
   parameter mnv.
-  parameter score is -1.
+  parameter score is "".
 
   PrintStatNumber("Fuel",           ship:deltav:current,  "m/s",  0, 0).
   PrintStatNumber("ETA",            mnv:eta,              "s",    1, 0).
-  if score:length > 0 {
+  if score:istype("Scalar") {
     PrintStatNumber("Score",        score,                "",     2, 0). }
   PrintStatNumber("Thrust",         ship:thrust,          "N",    3, 0).
 

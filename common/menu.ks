@@ -45,7 +45,7 @@ function GetSelection {
       declare time_remaining is ceiling(30 - (timestamp() - t):seconds()).
       set select_message to select_message + " Autoselecting in " + time_remaining + "s.".
     }
-    PRINT select_message AT(0,5).
+    PRINT select_message AT(0,labels:length+3).
   }
 
   ClearMenu(labels).
@@ -56,13 +56,7 @@ function GetSelection {
 function ClearMenu {
   parameter labels.
 
-  ClearLine(3).
-  declare n is 2.
-  until n > labels:length {
-    ClearLine(n+2).
-    set n to n + 1.
-  }
-  ClearLine(n+3).
+  for line in list(2, 3, 4, 5, 6, 7, 8, 9, 10) {ClearLine(line).}
 }
 
 function DestinationMenu {

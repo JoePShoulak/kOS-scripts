@@ -5,8 +5,7 @@ runOncePath("0:/common/stats.ks").
 runOncePath("0:/common/maneuvers.ks").
 
 function SSTOToOrbit {
-  print " ".
-  print "Performing Sequence: SSTO to Orbit.".
+  print "Performing Sequence: SSTO to Orbit." AT(0,3).
 
   Sequence(1, "Takeoff", SEQ["IDLE"]).
   Sequence(2, "Gain Speed", SEQ["IDLE"]).
@@ -112,4 +111,7 @@ function PitchToOrbit {
 
   // Completion
   Sequence(3, "Reach Orbit - Orbit achieved!", SEQ["COMPLETE"]).
+  wait 3.
+
+  for line in list(2, 3, 4, 5, 6, 7, 8, 9, 10) {ClearLine(line).}
 }

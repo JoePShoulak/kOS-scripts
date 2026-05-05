@@ -51,3 +51,13 @@ function Alert {
 
   my_gui:HIDE().
 }
+
+function PhaseAngleToTarget {
+  declare aShip is obt:lan+obt:argumentofperiapsis+obt:trueanomaly. //the ships angle to universal reference direction.
+  declare aTarget is target:obt:lan+target:obt:argumentofperiapsis+target:obt:trueanomaly. //target angle
+
+  declare aPhase is aTarget - aShip.
+  set aPhase to aPhase - 360 * floor(aPhase/360).
+
+  return aPhase.
+}

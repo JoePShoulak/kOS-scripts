@@ -102,6 +102,8 @@ function ExecuteManeuver {
   
   add mnv.
 
+  // TODO: Implement warping
+
   until time:seconds > startTime - 10 { ManeuverStats(mnv). }
   lock steering to mnv:burnvector.
   until time:seconds > startTime { ManeuverStats(mnv). }
