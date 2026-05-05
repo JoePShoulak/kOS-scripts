@@ -2,10 +2,10 @@ runOncePath("0:/common/maneuvers.ks").
 runOncePath("0:/common/util.ks").
 
 function Rendezvous {
-  parameter tgt.
+  parameter tgt is target.
   set target to tgt.
 
-  print "Performing Sequence: SSTO to Orbit." AT(0,3).
+  print "Performing Sequence: Rendezvous with " + tgt AT(0,2).
 
   Sequence(1, "Hohmann Transfer", SEQ["IDLE"]).
   Sequence(2, "Refine Intercept", SEQ["IDLE"]).

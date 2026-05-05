@@ -61,3 +61,62 @@ function PhaseAngleToTarget {
 
   return aPhase.
 }
+
+function AltitudeAt {
+  parameter t.
+
+  Kerbin:altitudeof(positionAt(ship, t)).
+}
+
+function TernarySearch {
+  parameter f, left, right, absolute_precision.
+
+  until false {
+    if abs(right-left) < absolute_precision {
+      return (left+right)/2.
+    }
+
+    local left_third is left + (right-left)/3.
+    local right_third is right - (right-left)/3.
+
+    if f(left_third) < f(right_third) {
+      set left to left_third.
+    } else {
+      set right to right_third.
+    }
+  }
+}
+
+function IdleScreen {
+  clearScreen.
+
+
+  // TODO: Find better art, maybe a different picture in flight, etc. 
+  PRINT "             ___" AT (terminal:width/2 - 8, terminal:height/2 - 6).
+  PRINT "     |     | |" AT (terminal:width/2 - 8, terminal:height/2 - 5).
+  PRINT "    / \    | |" AT (terminal:width/2 - 8, terminal:height/2 - 4).
+  PRINT "   |--o|===|-|" AT (terminal:width/2 - 8, terminal:height/2 - 3).
+  PRINT "   |---|   |K|" AT (terminal:width/2 - 8, terminal:height/2 - 2).
+  PRINT "  /     \  |S|" AT (terminal:width/2 - 8, terminal:height/2 - 1).
+  PRINT " | |     | |C|" AT (terminal:width/2 - 8, terminal:height/2).
+  PRINT " | |     |=| |" AT (terminal:width/2 - 8, terminal:height/2 + 1).
+  PRINT " | |     | | |" AT (terminal:width/2 - 8, terminal:height/2 + 2).
+  PRINT " |_______| |_|" AT (terminal:width/2 - 8, terminal:height/2 + 3).
+  PRINT "  |@| |@|  | |" AT (terminal:width/2 - 8, terminal:height/2 + 4).
+  PRINT "___________|_|_" AT (terminal:width/2 - 8, terminal:height/2 + 5).
+
+  PRINT "Press any button to continue".
+  until terminal:input:haschar() { IdleStats(). }
+  terminal:input:clear().
+}
+
+function WaitForPhaseAngle {
+  parameter angle.
+  parameter tgt is target.
+  set target to tgt.
+
+  // TODO: Improve this warping. It should go a little faster, but have smoothing when close.
+
+  until PhaseAngleToTarget() > angle and PhaseAngleToTarget() < angle+5 {set warp to 3.}
+  set warp to 0. 
+}

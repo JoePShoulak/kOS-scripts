@@ -5,7 +5,7 @@ runOncePath("0:/common/stats.ks").
 runOncePath("0:/common/maneuvers.ks").
 
 function SSTOToOrbit {
-  print "Performing Sequence: SSTO to Orbit." AT(0,3).
+  print "Performing Sequence: SSTO to Orbit." AT(0,2).
 
   Sequence(1, "Takeoff", SEQ["IDLE"]).
   Sequence(2, "Gain Speed", SEQ["IDLE"]).

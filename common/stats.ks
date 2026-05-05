@@ -45,3 +45,22 @@ function ManeuverStats {
 
   wait 0.001. // Since this is often a "do while waiting" task, best to add a small delay
 }
+
+function OrbitStats {
+  PrintStatNumber("Speed",      ship:airspeed,      "m/s",  0, 0).
+  PrintStatNumber("Altitude",   altitude/1000,      "km",   1, 0).
+  PrintStatNumber("Apoapsis",   apoapsis/1000,      "km",   2, 0).
+  PrintStatNumber("Thrust",     ship:thrust,        "N",    3, 0).
+
+  PrintStatNumber("V. Speed",   ship:verticalspeed, "m/s",  0, 1).
+  PrintStatNumber("q",          ship:q,             "ATM",  1, 1).
+  PrintStatNumber("Periapsis",  periapsis/1000,     "km",   2, 1).
+  PrintStatText("Engines",      ship:engines[0]:mode(),     3, 1).
+
+  wait 0.001. // Since this is often a "do while waiting" task, best to add a small delay
+}
+
+function IdleStats {
+  if ship:status = "PRELAUNCH" { FlightAscentStats(). } 
+  else { OrbitStats(). }
+}
