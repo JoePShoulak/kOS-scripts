@@ -21,11 +21,11 @@ function maneuverBurnTime {
 
   local mf is ship:mass / constant():e^(dV / (isp * g0)).
   local fuelFlow is ship:availablethrust / (isp * g0).
-  local t is (ship:mass - mf) / fuelFlow.
+  local burn_time is (ship:mass - mf) / fuelFlow.
 
   remove mnv.
 
-  return t.
+  return burn_time.
 }
 
 function isManeuverComplete {
@@ -109,11 +109,11 @@ function ExecuteManeuver {
 
   if startTime - time:seconds > 600 { warpTo(startTime - 600).  }
   lock steering to mnv:burnvector.
-  wait until vang(ship:facing:forevector, mnv:burnvector) <2.
+  wait until vang(ship:facing:forevector, mnv:burnvector) < 2.
   warpTo(startTime - 10).
-  until time:seconds > startTime { ManeuverStats(mnv). }
+  until time:seconds > startTime { ManeuverStats(). }
   lock throttle to 1.
-  until IsManeuverComplete(mnv) { ManeuverStats(mnv). }
+  until IsManeuverComplete(mnv) { ManeuverStats(). }
   lock throttle to 0.
   unlock steering.
   unlock throttle.

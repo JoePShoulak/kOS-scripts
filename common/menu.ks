@@ -32,8 +32,6 @@ function DrawMenu {
 }
 
 function ClearMenu { // TODO: Do this better
-  parameter labels.
-
   for line in list(2, 3, 4, 5, 6, 7, 8, 9, 10) {ClearLine(line).}
 }
 
@@ -42,12 +40,12 @@ function SequenceMenu {
   parameter timeout is -1.
 
   declare selection is 1.
-  declare t is timestamp().
+  declare start_time is timestamp().
 
   DrawMenu(options).
 
   declare ch is "".
-  until ch = terminal:input:enter or (timeout > 0 and timestamp() - t > timeout) {
+  until ch = terminal:input:enter or (timeout > 0 and timestamp() - start_time > timeout) {
     if terminal:input:haschar() {
       set ch to terminal:input:getchar().
 
@@ -59,13 +57,13 @@ function SequenceMenu {
 
     declare select_message is "Make a selection using the arrow keys and enter.".
     if timeout > 0 {
-      declare time_remaining is ceiling(30 - (timestamp() - t):seconds()).
+      declare time_remaining is ceiling(30 - (timestamp() - start_time):seconds()).
       set select_message to select_message + " Autoselecting in " + time_remaining + "s.".
     }
     PRINT select_message AT(0, options:length+3).
   }
 
-  ClearMenu(options).
+  ClearMenu().
 
   options[selection - 1]["delegate"]().
 }

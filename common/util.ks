@@ -34,6 +34,8 @@ function Sequence {
   print msg:padright(terminal:width) at(0, number + 3).
 }
 
+// TODO: Rework sequences to they return lists, which can be flattened by this function
+// That way, sequences can be combined very easily
 function ExecuteSequenceList {
   parameter sequence_func_list.
 
@@ -48,8 +50,9 @@ function ExecuteSequenceList {
   for s in sequence_list { s["init"](). }
   wait 1.
   for s in sequence_list { s["exec"](). }
+  wait 3. 
 
-  for line in list(2, 3, 4, 5, 6, 7, 8, 9, 10) {ClearLine(line).} // FIXME: Better clear
+  for line in list(2, 3, 4, 5, 6, 7, 8, 9, 10) {ClearLine(line).} // TODO: Better clear
 }
 
 function TransferResourceByTag {
@@ -69,7 +72,7 @@ function TransferAllResourcesByTag {
   parameter from_tag, to_tag.
 
     for res in ship:resources { 
-      if res:name = "ElectricCharge" { } 
+      if res:name = "ElectricCharge" {} 
       else { TransferResourceByTag(res:name, from_tag, to_tag). }
     }
 }
@@ -78,7 +81,7 @@ function Alert {
   parameter message.
 
   local my_gui is GUI(200).
-  local label is my_gui:addlabel(message).
+  declare label is my_gui:addlabel(message).
   SET label:STYLE:ALIGN TO "CENTER".
   SET label:STYLE:HSTRETCH TO True. // Fill horizontally
   LOCAL ok TO my_gui:ADDBUTTON("OK").
@@ -92,20 +95,10 @@ function Alert {
   my_gui:HIDE().
 }
 
-function PhaseAngleToTarget {
-  declare aShip is obt:lan+obt:argumentofperiapsis+obt:trueanomaly. //the ships angle to universal reference direction.
-  declare aTarget is target:obt:lan+target:obt:argumentofperiapsis+target:obt:trueanomaly. //target angle
-
-  declare aPhase is aTarget - aShip.
-  set aPhase to aPhase - 360 * floor(aPhase/360).
-
-  return aPhase.
-}
-
 function AltitudeAt {
-  parameter t.
+  parameter alt_time.
 
-  Kerbin:altitudeof(positionAt(ship, t)).
+  Kerbin:altitudeof(positionAt(ship, alt_time)).
 }
 
 function TernarySearch {
@@ -160,19 +153,4 @@ function IdleScreen {
   PRINT "Press any button to continue".
   until terminal:input:haschar() { IdleStats(). }
   terminal:input:clear().
-}
-
-function WaitForPhaseAngle {
-  parameter angle.
-  parameter tgt is target.
-  set target to tgt.
-
-  // TODO: Improve this warping. It should go a little faster, but have smoothing when close.
-
-  until PhaseAngleToTarget() > angle and PhaseAngleToTarget() < angle+5 {set warp to 3.}
-  set warp to 0.
-  wait 1.
-  until PhaseAngleToTarget() > angle and PhaseAngleToTarget() < angle+5 {set warp to 3.}
-
-  set warp to 0. 
 }
