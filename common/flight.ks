@@ -125,5 +125,5 @@ function PitchToOrbit {
 function SSTOToOrbit {
   print "Performing Sequence: SSTO to Orbit." AT(0,2).
 
-  ExecuteSequenceList(Takeoff@, LevelFlightToSpeed@, PitchToOrbit@).
+  ExecuteSequenceList(list(Takeoff@, LevelFlightToSpeed@, PitchToOrbit@)).
 }

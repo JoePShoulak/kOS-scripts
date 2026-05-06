@@ -7,7 +7,7 @@ function InitTerminal {
   CORE:PART:GETMODULE("kOSProcessor"):DOEVENT("Open Terminal").
   set terminal:width to 100.
 
-  if greeting:length {print greeting. }
+  if greeting:length { print greeting. }
 }
 
 function ClearLine {
@@ -42,7 +42,7 @@ function ExecuteSequenceList {
 
   declare i is 1.
   for seq_func in sequence_func_list {
-    sequence_list.add(seq_func(i)).
+    sequence_list:add(seq_func(i)).
     set i to i + 1.
   }
 
