@@ -35,6 +35,46 @@ function Sequence {
   print msg:padright(terminal:width) at(0, number + 3).
 }
 
+function ExecuteSequenceList {
+  parameter sequence_func_list.
+
+  declare sequence_list is list().
+
+  declare i is 1.
+  for seq_func in sequence_func_list {
+    sequence_list.add(seq_func(i)).
+    set i to i + 1.
+  }
+
+  for s in sequence_list { s["init"](). }
+  wait 1.
+  for s in sequence_list { s["exec"](). }
+
+  for line in list(2, 3, 4, 5, 6, 7, 8, 9, 10) {ClearLine(line).} // TODO: Better clear
+}
+
+function TransferResourceByTag {
+  parameter res, from_tag, to_tag.
+
+  set t to TransferAll(res, ship:partstagged(from_tag), ship:partstagged(to_tag)).
+    set t:active to true.
+    print " ".
+    print "Transferring " + res + "...".
+    wait until t:status = "Failed" or t:status = "Finished".
+    if t:message:contains("connected") { print "  No source/destination.". }
+    else if t:message:contains("Transferred") { print "  Transfer complete!". }
+    else { print "  Unkown error.". }
+}
+
+function TransferAllResourcesByTag {
+  parameter from_tag, to_tag.
+
+    for res in ship:resources { 
+      if res:name = "ElectricCharge" { } 
+      else { TransferResourceByTag(res:name, from_tag, to_tag). }
+    }
+}
+
 function Alert {
   parameter message.
 

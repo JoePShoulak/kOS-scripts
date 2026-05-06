@@ -2,6 +2,16 @@
 
 runOncePath("0:/common/util.ks").
 
+function CreateOption {
+  parameter label.
+  parameter delegate.
+
+  return lexicon(
+    "label", label,
+    "delegate", delegate
+  ).
+}
+
 function MenuItem {
   parameter number.
   parameter text.

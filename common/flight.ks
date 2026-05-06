@@ -4,115 +4,126 @@ runOncePath("0:/common/mechjeb.ks").
 runOncePath("0:/common/stats.ks").
 runOncePath("0:/common/maneuvers.ks").
 
-function SSTOToOrbit {
-  print "Performing Sequence: SSTO to Orbit." AT(0,2).
 
-  Sequence(1, "Takeoff", SEQ["IDLE"]).
-  Sequence(2, "Gain Speed", SEQ["IDLE"]).
-  Sequence(3, "Reach Orbit", SEQ["IDLE"]).
 
-  wait 1.
-
-  Takeoff().
-  LevelFlightToSpeed().
-  PitchToOrbit().
-}
-
-// TAKEOFF
 function Takeoff {
-  parameter pitch is 10.
-  parameter safe_alt is 1000.
-  parameter hdg is 90.
+  parameter index.
 
-  lock throttle to 1.0.
-  LOCK STEERING to HEADING(hdg, 0).
-  set brakes to false.
+  return lexicon (
+    "init", { Sequence(index, "Takeoff", SEQ["IDLE"]). },
+    "exec", {
+      parameter pitch is 10.
+      parameter safe_alt is 1000.
+      parameter hdg is 90.
 
-  stage.
+      lock throttle to 1.0.
+      LOCK STEERING to HEADING(hdg, 0).
+      set brakes to false.
 
-  Sequence(1, "Takeoff - Ignition!").
+      stage.
 
-  declare local t to timestamp().
-  until timestamp() - t > 3 { FlightAscentStats(). }
+      Sequence(index, "Takeoff - Ignition!").
 
-  Sequence(1, "Takeoff - Gaining speed for takeoff.").
-  UNTIL ship:groundspeed > 100 { FlightAscentStats(). }
+      declare local t to timestamp().
+      until timestamp() - t > 3 { FlightAscentStats(). }
 
-  Sequence(1, "Takeoff - Pitching for takeoff.").
-  LOCK STEERING to HEADING(hdg, pitch).
-  UNTIL altitude > 75 or verticalSpeed > 1 { FlightAscentStats(). }
+      Sequence(index, "Takeoff - Gaining speed for takeoff.").
+      UNTIL ship:groundspeed > 100 { FlightAscentStats(). }
 
-  Sequence(1, "Takeoff - Airborne! Raising gear.").
-  SET gear to false.
-  set t to timestamp().
-  until timestamp() - t > 3 { FlightAscentStats(). }
+      Sequence(index, "Takeoff - Pitching for takeoff.").
+      LOCK STEERING to HEADING(hdg, pitch).
+      UNTIL altitude > 75 or verticalSpeed > 1 { FlightAscentStats(). }
 
-  Sequence(1, "Takeoff - Ascending to " + safe_alt + "m.").
-  set warpmode to "PHYSICS".
-  set warp to 3.
-  until altitude > safe_alt { FlightAscentStats(). }
-  set warp to 0.
+      Sequence(index, "Takeoff - Airborne! Raising gear.").
+      SET gear to false.
+      set t to timestamp().
+      until timestamp() - t > 3 { FlightAscentStats(). }
 
-  Sequence(1, "Takeoff - Safe altitude reached. Takeoff complete.", SEQ["COMPLETE"]).
+      Sequence(index, "Takeoff - Ascending to " + safe_alt + "m.").
+      set warpmode to "PHYSICS".
+      set warp to 3.
+      until altitude > safe_alt { FlightAscentStats(). }
+      set warp to 0.
+
+      Sequence(index, "Takeoff - Safe altitude reached. Takeoff complete.", SEQ["COMPLETE"]).
+    }
+  ).
 }
 
 // LEVEL FLIGHT TO SPEED:
 //   Performs a level flight until a given speed is reached.
 function LevelFlightToSpeed {
-  parameter speed is 1000.
-  parameter hdg is 90.
+  parameter index.
 
-  Sequence(2, "Gain Speed - Flying level until: " + speed + "m/s...").
-  set warpmode to "PHYSICS".
-  set warp to 1.
-  LOCK STEERING to HEADING(hdg, 2).
-  until ship:airspeed > speed { FlightAscentStats(). }
-  set warp to 0.
-  Sequence(2, "Gain Speed - Target speed reached.", SEQ["COMPLETE"]).
+  return lexicon(
+    "init", { Sequence(index, "Gain Speed", SEQ["IDLE"]). },
+    "exec", {
+      parameter speed is 1000.
+      parameter hdg is 90.
+
+      Sequence(index, "Gain Speed - Flying level until: " + speed + "m/s...").
+      set warpmode to "PHYSICS".
+      set warp to 1.
+      LOCK STEERING to HEADING(hdg, 2).
+      until ship:airspeed > speed { FlightAscentStats(). }
+      set warp to 0.
+      Sequence(index, "Gain Speed - Target speed reached.", SEQ["COMPLETE"]).
+    }
+  ).
 }
 
 // Time to get high
 function PitchToOrbit {
-  parameter target_alt is 80000.
-  parameter hdg is 90.
-  set warpmode to "PHYSICS".
+  parameter index.
 
-  // Pitch up until we run out of thrust
-  Sequence(3, "Reach Orbit - Pitching up for altitude.").
-  set warp to 1.
-  lock steering to heading(hdg, 15).
-  until ship:thrust < 100 { FlightAscentStats(). }
+  return lexicon(
+    "init", { Sequence(index, "Reach Orbit", SEQ["IDLE"]). },
+    "exec", {
+      parameter target_alt is 80000.
+      parameter hdg is 90.
+      set warpmode to "PHYSICS".
 
-  // Toggle out engines to closed cycle mode
-  Sequence(3, "Reach Orbit - Switching engines to Closed Cycle mode.").
-  set warp to 2.
-  LIST ENGINES IN my_engines.
-  for eng in my_engines { eng:togglemode(). }
-  until apoapsis > target_alt { FlightAscentStats(). }
-  lock throttle to 0.0.
+      // Pitch up until we run out of thrust
+      Sequence(index, "Reach Orbit - Pitching up for altitude.").
+      set warp to 1.
+      lock steering to heading(hdg, 15).
+      until ship:thrust < 100 { FlightAscentStats(). }
 
-  // Touch space
-  Sequence(3, "Reach Orbit - Coasting to space.").
-  lock steering to prograde.
-  set warp to 3.
-  until altitude > ship:orbit:body:atm:height {
-    if apoapsis < target_alt {
-      lock throttle to (choose 0.05 if throttle < 0.05 else throttle * 2.0).
-    } else {
+      // Toggle out engines to closed cycle mode
+      Sequence(index, "Reach Orbit - Switching engines to Closed Cycle mode.").
+      set warp to 2.
+      LIST ENGINES IN my_engines.
+      for eng in my_engines { eng:togglemode(). }
+      until apoapsis > target_alt { FlightAscentStats(). }
       lock throttle to 0.0.
+
+      // Touch space
+      Sequence(index, "Reach Orbit - Coasting to space.").
+      lock steering to prograde.
+      set warp to 3.
+      until altitude > ship:orbit:body:atm:height {
+        if apoapsis < target_alt {
+          lock throttle to (choose 0.05 if throttle < 0.05 else throttle * 2.0).
+        } else {
+          lock throttle to 0.0.
+        }
+
+        FlightAscentStats(). 
+      }
+      set warp to 0.
+
+      // Get to a stable orbit
+      Sequence(index, "Reach Orbit - Circularizing.").
+      CircularizeAtApoapsis().
+
+      // Completion
+      Sequence(index, "Reach Orbit - Orbit achieved!", SEQ["COMPLETE"]).
     }
+  ).
+}
 
-    FlightAscentStats(). 
-  }
-  set warp to 0.
+function SSTOToOrbit {
+  print "Performing Sequence: SSTO to Orbit." AT(0,2).
 
-  // Get to a stable orbit
-  Sequence(3, "Reach Orbit - Circularizing.").
-  CircularizeAtApoapsis().
-
-  // Completion
-  Sequence(3, "Reach Orbit - Orbit achieved!", SEQ["COMPLETE"]).
-  wait 3.
-
-  for line in list(2, 3, 4, 5, 6, 7, 8, 9, 10) {ClearLine(line).}
+  ExecuteSequenceList(Takeoff@, LevelFlightToSpeed@, PitchToOrbit@).
 }
