@@ -8,71 +8,82 @@ function PrintStatText {
   PRINT (label + ": " + text):padright(padding) AT(col*padding, start_row + row).
 }
 
-function PrintStatNumber {
-  parameter label, value, unit, col, row.
+function CreateStat {
+  parameter label, delegate.
 
-  PrintStatText(label, round(value, 2) + unit, col, row).
+  return lexicon(
+    "label", label,
+    "delegate", delegate
+  ).
 }
 
-// TODO: Fix all this shit up wih lexicons
+declare s_air_speed    is CreateStat("Speed",     { return round(ship:airspeed,       2) + "m/s". } ).
+declare s_altitude     is CreateStat("Altitude",  { return round(altitude/1000,       2) + "km".  } ).
+declare s_apoapsis     is CreateStat("Apoapsis",  { return round(apoapsis/1000,       2) + "km".  } ).
+declare s_thrust       is CreateStat("Thrust",    { return round(ship:thrust,         2) + "N".   } ).
+declare s_v_speed      is CreateStat("V. Speed",  { return round(ship:verticalspeed,  2) + "m/s". } ).
+declare s_q            is CreateStat("q",         { return round(ship:q,              2) + "ARM". } ).
+declare s_periapsis    is CreateStat("periapsis", { return round(periapsis/1000,      2) + "km".  } ).
+declare s_enginemode   is CreateStat("periapsis", { return round(ship:airspeed,       2) + "m/s". } ).
 
-function FlightAscentStats {
-  PrintStatNumber("Speed",      ship:airspeed,      "m/s",  0, 0).
-  PrintStatNumber("Altitude",   altitude/1000,      "km",   1, 0).
-  PrintStatNumber("Apoapsis",   apoapsis/1000,      "km",   2, 0).
-  PrintStatNumber("Thrust",     ship:thrust,        "N",    3, 0).
+declare s_fuel         is CreateStat("Fuel",      { return round(ship:deltav:current, 2) + "m/s". } ).
+declare s_mnv_eta      is CreateStat("ETA",       { return round(nextnode:eta,        2) + "s".   } ).
+declare s_nodes        is CreateStat("Nodes",     { return round(allnodes:length,     2) + "".    } ).
+declare s_dv_total     is CreateStat("Speed",     { return round(nextnode:deltav:mag, 2) + "m/s". } ).
+declare s_dv_prograde  is CreateStat("Speed",     { return round(nextnode:prograde,   2) + "m/s". } ).
+declare s_dv_radial    is CreateStat("Speed",     { return round(nextnode:radialout,  2) + "m/s". } ).
+declare s_dv_normal    is CreateStat("Speed",     { return round(nextnode:normal,     2) + "m/s". } ).
+declare s_period       is CreateStat("Period",    { return timestamp(orbit:period).               } ).
 
-  PrintStatNumber("V. Speed",   ship:verticalspeed, "m/s",  0, 1).
-  PrintStatNumber("q",          ship:q,             "ATM",  1, 1).
-  PrintStatNumber("Periapsis",  periapsis/1000,     "km",   2, 1).
-  declare eng is choose ship:engines[0]:mode() if ship:engines[0]:multimode else ship:engines:length.
-  PrintStatText("Engines",      eng,     3, 1).
+function DrawStatPanel {
+  parameter s1, s2, s3, s4, s5, s6, s7, s8.
 
-  wait 0.001. // Since this is often a "do while waiting" task, best to add a small delay
+  declare i is 0.
+  declare j is 0.
+
+  for s in list(s1, s2, s3, s4, s5, s6, s7, s8) {
+    if i = 4 { set i to 0. set j to 1. }
+    PrintStatText(s["label"], s["delegate"](), i, j).
+    set i to i + 1.
+  }
 }
+
+function SSTOStats {
+  return DrawStatPanel(
+    s_air_speed,  s_altitude, s_apoapsis,  s_thrust,
+    s_v_speed,    s_q,        s_periapsis, s_enginemode
+  ).
+}
+
+// TODO: Non-ssto plane stats
 
 function ManeuverStats {
-  parameter mnv.
-  parameter score is "".
-
-  PrintStatNumber("Fuel",           ship:deltav:current,  "m/s",  0, 0).
-  PrintStatNumber("ETA",            mnv:eta,              "s",    1, 0).
-  if score:istype("Scalar") {
-    PrintStatNumber("Score",        score,                "",     2, 0). }
-  PrintStatNumber("Thrust",         ship:thrust,          "N",    3, 0).
-
-  PrintStatNumber("dV - Total",     mnv:deltav:mag,       "m/s",  0, 1).
-  PrintStatNumber("dV - Prograde",  mnv:prograde,         "m/s",  1, 1).
-  PrintStatNumber("dV - Radial",    mnv:radialout,        "m/s",  2, 1).
-  PrintStatNumber("dV - Normal",    mnv:normal,           "m/s",  3, 1).
-
-  wait 0.001. // Since this is often a "do while waiting" task, best to add a small delay
+  return DrawStatPanel(
+    s_fuel,     s_mnv_eta,     s_nodes,     s_thrust,
+    s_dv_total, s_dv_prograde, s_dv_radial, s_dv_normal
+  ).
 }
 
 function OrbitStats {
-  PrintStatNumber("Speed",      ship:airspeed,      "m/s",  0, 0).
-  PrintStatNumber("Altitude",   altitude/1000,      "km",   1, 0).
-  PrintStatNumber("Apoapsis",   apoapsis/1000,      "km",   2, 0).
-  PrintStatNumber("Thrust",     ship:thrust,        "N",    3, 0).
-
-  PrintStatNumber("V. Speed",   ship:verticalspeed, "m/s",  0, 1).
-  PrintStatNumber("q",          ship:q,             "ATM",  1, 1).
-  PrintStatNumber("Periapsis",  periapsis/1000,     "km",   2, 1).
-  declare eng is choose ship:engines[0]:mode() if ship:engines[0]:multimode else ship:engines:length.
-  PrintStatText("Engines",      eng,        3, 1).
-
-  wait 0.001. // Since this is often a "do while waiting" task, best to add a small delay
+  return DrawStatPanel(
+    s_air_speed, s_altitude, s_apoapsis,  s_thrust,
+    s_v_speed,  s_q,        s_periapsis, s_period
+  ).
 }
 
 function RendezvousStats {
-
+  // TODO: create this stat panel
 }
 
 function StationStats {
-
+  // TODO: create this stat panel
 }
 
+// TODO: Fix this, have better conditional idle categories
+// SSTOStatPanel is unsafe due to modal engine check
 function IdleStats {
-  if ship:status = "PRELAUNCH" { FlightAscentStats(). } 
-  else { OrbitStats(). }
+  // if ship:status = "PRELAUNCH" { SSTOStatPanel(). } 
+  // else { OrbitStats(). }
+
+  OrbitStats().
 }

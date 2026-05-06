@@ -31,9 +31,16 @@ function DrawMenu {
   }
 }
 
-function GetSelection {
+function ClearMenu { // TODO: Do this better
+  parameter labels.
+
+  for line in list(2, 3, 4, 5, 6, 7, 8, 9, 10) {ClearLine(line).}
+}
+
+function SequenceMenu {
   parameter options.
   parameter timeout is -1.
+
   declare selection is 1.
   declare t is timestamp().
 
@@ -60,18 +67,5 @@ function GetSelection {
 
   ClearMenu(options).
 
-  return options[selection - 1].
-}
-
-function ClearMenu {
-  parameter labels.
-
-  for line in list(2, 3, 4, 5, 6, 7, 8, 9, 10) {ClearLine(line).}
-}
-
-function SequenceMenu {
-  parameter options.
-  parameter timeout is -1.
-
-  GetSelection(options, timeout)["delegate"](). // Call the function associated with the selection
+  options[selection - 1]["delegate"]().
 }

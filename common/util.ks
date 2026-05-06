@@ -22,7 +22,6 @@ declare global SEQ is lexicon(
   "COMPLETE", 2
 ).
 
-// TODO: Make these lexicons so that we can have their initial data, index, and callbacks
 function Sequence {
   parameter number.
   parameter text.
@@ -50,7 +49,7 @@ function ExecuteSequenceList {
   wait 1.
   for s in sequence_list { s["exec"](). }
 
-  for line in list(2, 3, 4, 5, 6, 7, 8, 9, 10) {ClearLine(line).} // TODO: Better clear
+  for line in list(2, 3, 4, 5, 6, 7, 8, 9, 10) {ClearLine(line).} // FIXME: Better clear
 }
 
 function TransferResourceByTag {

@@ -1,10 +1,7 @@
 // flight.ks
 runOncePath("0:/common/util.ks").
-runOncePath("0:/common/mechjeb.ks").
 runOncePath("0:/common/stats.ks").
 runOncePath("0:/common/maneuvers.ks").
-
-
 
 function Takeoff {
   parameter index.
@@ -25,24 +22,24 @@ function Takeoff {
       Sequence(index, "Takeoff - Ignition!").
 
       declare local t to timestamp().
-      until timestamp() - t > 3 { FlightAscentStats(). }
+      until timestamp() - t > 3 { SSTOStats(). }
 
       Sequence(index, "Takeoff - Gaining speed for takeoff.").
-      UNTIL ship:groundspeed > 100 { FlightAscentStats(). }
+      UNTIL ship:groundspeed > 100 { SSTOStats(). }
 
       Sequence(index, "Takeoff - Pitching for takeoff.").
       LOCK STEERING to HEADING(hdg, pitch).
-      UNTIL altitude > 75 or verticalSpeed > 1 { FlightAscentStats(). }
+      UNTIL altitude > 75 or verticalSpeed > 1 { SSTOStats(). }
 
       Sequence(index, "Takeoff - Airborne! Raising gear.").
       SET gear to false.
       set t to timestamp().
-      until timestamp() - t > 3 { FlightAscentStats(). }
+      until timestamp() - t > 3 { SSTOStats(). }
 
       Sequence(index, "Takeoff - Ascending to " + safe_alt + "m.").
       set warpmode to "PHYSICS".
       set warp to 3.
-      until altitude > safe_alt { FlightAscentStats(). }
+      until altitude > safe_alt { SSTOStats(). }
       set warp to 0.
 
       Sequence(index, "Takeoff - Safe altitude reached. Takeoff complete.", SEQ["COMPLETE"]).
@@ -65,7 +62,7 @@ function LevelFlightToSpeed {
       set warpmode to "PHYSICS".
       set warp to 1.
       LOCK STEERING to HEADING(hdg, 2).
-      until ship:airspeed > speed { FlightAscentStats(). }
+      until ship:airspeed > speed { SSTOStats(). }
       set warp to 0.
       Sequence(index, "Gain Speed - Target speed reached.", SEQ["COMPLETE"]).
     }
@@ -87,14 +84,14 @@ function PitchToOrbit {
       Sequence(index, "Reach Orbit - Pitching up for altitude.").
       set warp to 1.
       lock steering to heading(hdg, 15).
-      until ship:thrust < 100 { FlightAscentStats(). }
+      until ship:thrust < 100 { SSTOStats(). }
 
       // Toggle out engines to closed cycle mode
       Sequence(index, "Reach Orbit - Switching engines to Closed Cycle mode.").
       set warp to 2.
       LIST ENGINES IN my_engines.
       for eng in my_engines { eng:togglemode(). }
-      until apoapsis > target_alt { FlightAscentStats(). }
+      until apoapsis > target_alt { SSTOStats(). }
       lock throttle to 0.0.
 
       // Touch space
@@ -108,7 +105,7 @@ function PitchToOrbit {
           lock throttle to 0.0.
         }
 
-        FlightAscentStats(). 
+        SSTOStats(). 
       }
       set warp to 0.
 
