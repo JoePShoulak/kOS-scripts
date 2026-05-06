@@ -59,7 +59,7 @@ function ClearMenu {
   for line in list(2, 3, 4, 5, 6, 7, 8, 9, 10) {ClearLine(line).}
 }
 
-function DestinationMenu {
+function SequenceMenu {
   parameter delegates.
   parameter labels.
   parameter timeout is -1.

@@ -22,6 +22,7 @@ declare global SEQ is lexicon(
   "COMPLETE", 2
 ).
 
+// TODO: Make these lexicons so that we can have their initial data, index, and callbacks
 function Sequence {
   parameter number.
   parameter text.
@@ -87,23 +88,35 @@ function TernarySearch {
   }
 }
 
+function ApoapsisTime {
+  parameter mnv.
+
+  local apoapsis_time is TernarySearch(
+    AltitudeAt@,
+    time:seconds + mnv:eta,
+    time:seconds + mnv:eta + (mnv:orbit:period / 2),
+    1
+  ).
+
+  return apoapsis_time.
+}
+
 function IdleScreen {
   clearScreen.
 
-
   // TODO: Find better art, maybe a different picture in flight, etc. 
   PRINT "             ___" AT (terminal:width/2 - 8, terminal:height/2 - 6).
-  PRINT "     |     | |" AT (terminal:width/2 - 8, terminal:height/2 - 5).
-  PRINT "    / \    | |" AT (terminal:width/2 - 8, terminal:height/2 - 4).
-  PRINT "   |--o|===|-|" AT (terminal:width/2 - 8, terminal:height/2 - 3).
-  PRINT "   |---|   |K|" AT (terminal:width/2 - 8, terminal:height/2 - 2).
-  PRINT "  /     \  |S|" AT (terminal:width/2 - 8, terminal:height/2 - 1).
-  PRINT " | |     | |C|" AT (terminal:width/2 - 8, terminal:height/2).
-  PRINT " | |     |=| |" AT (terminal:width/2 - 8, terminal:height/2 + 1).
-  PRINT " | |     | | |" AT (terminal:width/2 - 8, terminal:height/2 + 2).
-  PRINT " |_______| |_|" AT (terminal:width/2 - 8, terminal:height/2 + 3).
-  PRINT "  |@| |@|  | |" AT (terminal:width/2 - 8, terminal:height/2 + 4).
-  PRINT "___________|_|_" AT (terminal:width/2 - 8, terminal:height/2 + 5).
+  PRINT "     |     | |"   AT (terminal:width/2 - 8, terminal:height/2 - 5).
+  PRINT "    / \    | |"   AT (terminal:width/2 - 8, terminal:height/2 - 4).
+  PRINT "   |--o|===|-|"   AT (terminal:width/2 - 8, terminal:height/2 - 3).
+  PRINT "   |---|   |K|"   AT (terminal:width/2 - 8, terminal:height/2 - 2).
+  PRINT "  /     \  |S|"   AT (terminal:width/2 - 8, terminal:height/2 - 1).
+  PRINT " | |     | |C|"   AT (terminal:width/2 - 8, terminal:height/2    ).
+  PRINT " | |     |=| |"   AT (terminal:width/2 - 8, terminal:height/2 + 1).
+  PRINT " | |     | | |"   AT (terminal:width/2 - 8, terminal:height/2 + 2).
+  PRINT " |_______| |_|"   AT (terminal:width/2 - 8, terminal:height/2 + 3).
+  PRINT "  |@| |@|  | |"   AT (terminal:width/2 - 8, terminal:height/2 + 4).
+  PRINT "___________|_|_"  AT (terminal:width/2 - 8, terminal:height/2 + 5).
 
   PRINT "Press any button to continue".
   until terminal:input:haschar() { IdleStats(). }
@@ -118,5 +131,9 @@ function WaitForPhaseAngle {
   // TODO: Improve this warping. It should go a little faster, but have smoothing when close.
 
   until PhaseAngleToTarget() > angle and PhaseAngleToTarget() < angle+5 {set warp to 3.}
+  set warp to 0.
+  wait 1.
+  until PhaseAngleToTarget() > angle and PhaseAngleToTarget() < angle+5 {set warp to 3.}
+
   set warp to 0. 
 }

@@ -14,6 +14,8 @@ function PrintStatNumber {
   PrintStatText(label, round(value, 2) + unit, col, row).
 }
 
+// TODO: Fix all this shit up wih lexicons
+
 function FlightAscentStats {
   PrintStatNumber("Speed",      ship:airspeed,      "m/s",  0, 0).
   PrintStatNumber("Altitude",   altitude/1000,      "km",   1, 0).
@@ -58,6 +60,14 @@ function OrbitStats {
   PrintStatText("Engines",      ship:engines[0]:mode(),     3, 1).
 
   wait 0.001. // Since this is often a "do while waiting" task, best to add a small delay
+}
+
+function RendezvousStats {
+
+}
+
+function StationStats {
+
 }
 
 function IdleStats {

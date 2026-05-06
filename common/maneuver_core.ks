@@ -85,8 +85,12 @@ function ImproveParameters {
 
   declare old_score is 2^64.
 
+  declare i_limit is 100.
+  declare i is 0. 
   for step_size in step_list {
-    until false {
+    set i to 0.
+    until i > i_limit {
+      set i to i + 1.
       set old_score to Metric(data).
       set data to Improve(data, Metric@, step_size).
       if old_score <= Metric(data) { break. }
@@ -103,10 +107,10 @@ function ExecuteManeuver {
   
   add mnv.
 
-  // TODO: Implement warping
-
-  until time:seconds > startTime - 10 { ManeuverStats(mnv). }
+  if startTime - time:seconds > 600 { warpTo(startTime - 600).  }
   lock steering to mnv:burnvector.
+  wait until vang(ship:facing:forevector, mnv:burnvector) <2.
+  warpTo(startTime - 10).
   until time:seconds > startTime { ManeuverStats(mnv). }
   lock throttle to 1.
   until IsManeuverComplete(mnv) { ManeuverStats(mnv). }

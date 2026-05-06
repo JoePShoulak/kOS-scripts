@@ -26,6 +26,7 @@ function Takeoff {
 
   lock throttle to 1.0.
   LOCK STEERING to HEADING(hdg, 0).
+  set brakes to false.
 
   stage.
 

@@ -8,7 +8,6 @@ runOncePath("0:/common/maneuvers.ks").
 runOncePath("0:/common/rendezvous.ks").
 
 // TODO: Implement all these delegates
-// TODO: Allow for gracefully leaving the menu and add an idle screen with an easy way to rengage with the program
 
 declare launch_labels is list(
   "LKO",
@@ -21,15 +20,19 @@ declare launch_labels is list(
 
 declare launch_delegates is list(
   SSTOToOrbit@, // LKO
-  { SHUTDOWN. }, // LKO - Tourism
+  {}, // LKO - Tourism
   { // Kerbin Alpha
-    WaitForPhaseAngle(30, "Kerbin Alpha"). SSTOToOrbit(). Rendezvous(). DockWithClosestVessel().
+    SSTOToOrbit(). Rendezvous(). DockWithClosestVessel().
   },
   { // Kerbin Alpha - Resupply
-    WaitForPhaseAngle(30, "Kerbin Alpha"). SSTOToOrbit(). Rendezvous(). DockWithClosestVessel().
+    SSTOToOrbit(). Rendezvous(). DockWithClosestVessel(). 
+    // Transfer resources and crew
+    // Return home
   },
   { // Kerbin Alpha - Tourism
-    WaitForPhaseAngle(30, "Kerbin Alpha"). SSTOToOrbit(). Rendezvous(). DockWithClosestVessel().
+    SSTOToOrbit(). Rendezvous(). DockWithClosestVessel().
+    // Wait 4 hours
+    // Return home
   }, 
   {}  // Exit
 ).
@@ -43,7 +46,7 @@ declare orbit_labels is list(
 ).
 
 declare orbit_delegates is list(
-  { SHUTDOWN. }, // Kerbal Space Center
+  {}, // Kerbal Space Center
   { Rendezvous("Kerbin Alpha"). DockWithClosestVessel(). }, // Kerbin Alpha
   { Rendezvous("Kerbin Alpha"). DockWithClosestVessel(). }, // Kerbin Alpha - Resupply
   { Rendezvous("Kerbin Alpha"). DockWithClosestVessel(). }, // Kerbin Alpha - Tourism
@@ -51,19 +54,13 @@ declare orbit_delegates is list(
 ).
 
 // MAIN
-wait 3. // in case we want to telnet in before init
+if ship:status = "PRELAUNCH" { set brakes to true. }
 
 until false {
   InitTerminal("Welcome to the " + ship:name + " kOS autpilot!").
 
-  if ship:status = "PRELAUNCH" { DestinationMenu(launch_delegates, launch_labels, 30). }
-  else { DestinationMenu(orbit_delegates, orbit_labels). }
+  if ship:status = "PRELAUNCH" { SequenceMenu(launch_delegates, launch_labels, 30). }
+  else { SequenceMenu(orbit_delegates, orbit_labels). }
 
   IdleScreen().
 }
-
-
-// Alert("Rendezvous and dock with Kerbin Alpha.").
-// declare docking_port is ship:partsnamedpattern("docking")[0].
-// wait until docking_port:haspartner().
-// PRINT "Nice job docking!".
