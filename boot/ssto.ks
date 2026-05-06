@@ -26,7 +26,7 @@ declare launch_delegates is list(
   },
   { // Kerbin Alpha - Resupply
     SSTOToOrbit(). Rendezvous(). DockWithClosestVessel(). 
-    // Transfer resources and crew
+    // Transfer resources 
     // Return home
   },
   { // Kerbin Alpha - Tourism

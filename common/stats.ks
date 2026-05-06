@@ -25,7 +25,8 @@ function FlightAscentStats {
   PrintStatNumber("V. Speed",   ship:verticalspeed, "m/s",  0, 1).
   PrintStatNumber("q",          ship:q,             "ATM",  1, 1).
   PrintStatNumber("Periapsis",  periapsis/1000,     "km",   2, 1).
-  PrintStatText("Engines",      ship:engines[0]:mode(),     3, 1).
+  declare eng is choose ship:engines[0]:mode() if ship:engines[0]:multimode else ship:engines:length.
+  PrintStatText("Engines",      eng,     3, 1).
 
   wait 0.001. // Since this is often a "do while waiting" task, best to add a small delay
 }
@@ -57,7 +58,8 @@ function OrbitStats {
   PrintStatNumber("V. Speed",   ship:verticalspeed, "m/s",  0, 1).
   PrintStatNumber("q",          ship:q,             "ATM",  1, 1).
   PrintStatNumber("Periapsis",  periapsis/1000,     "km",   2, 1).
-  PrintStatText("Engines",      ship:engines[0]:mode(),     3, 1).
+  declare eng is choose ship:engines[0]:mode() if ship:engines[0]:multimode else ship:engines:length.
+  PrintStatText("Engines",      eng,        3, 1).
 
   wait 0.001. // Since this is often a "do while waiting" task, best to add a small delay
 }
