@@ -32,7 +32,11 @@ function ShipMach { // TODO: Test this
 function ResourceFillPercentage {
   parameter res.
 
-  return res:amount/res:capacity*100 + "%".
+  for resource in ship:resources {
+    if res = resource:name { set res to resource. }
+  }
+
+  return round(res:amount/res:capacity*100, 2) + "%".
 }
 
 // Flight

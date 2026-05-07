@@ -19,13 +19,13 @@ declare options is list(
   CreateOption("Exit", {})
 ).
 
+dummy().
+
 // main
 until false {
   InitTerminal("Welcome to " + ship:name + "! Your home away from home.").
 
   SequenceMenu(options).
-
-  wait 3.
 
   IdleScreen().
 }

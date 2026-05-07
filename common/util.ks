@@ -1,5 +1,64 @@
 // util.ks
 
+/////////////
+// DOCKING //
+/////////////
+
+declare domelights is ship:partsnamedpattern("Domelight").
+
+declare DSTS is lexicon(
+  "VACANT", 0,
+  "OCCUPIED", 1,
+  "ASSIGNED", 2
+).
+
+function GetDockingLights {
+  parameter port.
+
+  declare closest_light is domelights[0].
+  declare closest_distance is 2^64.
+  for l in domelights:sublist(1, domelights:length-1) {
+    declare d is (l:position - port:position):mag.
+    if d < closest_distance {
+      set closest_distance to d.
+      set closest_light to l.
+    }
+  }
+
+  declare docking_lights is list().
+  for l in domelights {
+    declare d is (l:position - port:position):mag.
+    if d < closest_distance + 1 {
+      docking_lights:add(l).
+    }
+  }
+
+  return docking_lights.
+}
+
+function UpdateDockingLights { 
+  parameter port.
+  parameter dock_status.
+
+  declare lights is GetDockingLights(port).
+
+  for l in lights {
+    declare light_module is l:GetModule("ModuleLight").
+    declare event is "blink " + (choose "on" if dock_status = DSTS["ASSIGNED"] else "off").
+    if light_module:HasEvent(event) { light_module:DoEvent(event). }
+  }
+}
+
+
+function dummy {
+  declare p is ship:dockingports[0].
+
+  UpdateDockingLights(p, DSTS["ASSIGNED"]).
+}
+
+/////////////
+// UTILITY //
+/////////////
 
 // INIT TERMINAL: 
 //   Clears and brings up the kOS Terminal in-game
