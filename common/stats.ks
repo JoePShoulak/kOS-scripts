@@ -1,12 +1,4 @@
-
-function PrintStatText {
-  parameter label, text, col, row.
-
-  declare padding is floor(terminal:width/4).
-  declare start_row is terminal:height - 3.
-
-  PRINT (label + ": " + text):padright(padding) AT(col*padding, start_row + row).
-}
+// stats.ks
 
 function CreateStat {
   parameter label, delegate.
@@ -15,6 +7,15 @@ function CreateStat {
     "label", label,
     "delegate", delegate
   ).
+}
+
+function PrintStatText {
+  parameter label, text, col, row.
+
+  declare padding is floor(terminal:width/4).
+  declare start_row is terminal:height - 3.
+
+  PRINT (label + ": " + text):padright(padding) AT(col*padding, start_row + row).
 }
 
 function ShipMach { // TODO: Test this

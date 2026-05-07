@@ -1,5 +1,8 @@
+// rendezvous.ks
+
 runOncePath("0:/common/maneuvers.ks").
 runOncePath("0:/common/util.ks").
+runOncePath("0:/common/sequence.ks").
 
 declare target_distance is 100.
 
@@ -97,6 +100,7 @@ function ReduceDistanceAndVelocity {
   return lexicon(
     "init", { Sequence(index, "Refine Intercept", SEQ["IDLE"]). },
     "exec", {
+      Sequence(index, "Refine Intercept - Matching Velocity...").
       MatchVelocity().
 
       until DistanceToTarget() < target_distance { // relative velocity < 1m/s and distance < 200m
@@ -114,16 +118,33 @@ function ReduceDistanceAndVelocity {
 }
 
 function Rendezvous {
-  parameter tgt is target.
-  set target to tgt.
-
-  print "Performing Sequence: Rendezvous with " + tgt AT(0,2).
-
-  // ExecuteSequenceList(list(Intercept@, ReduceDistanceAndVelocity@)).
-  ExecuteSequenceList(list(ReduceDistanceAndVelocity@)). // FIXME: For testing only; uncomment above after
-  // ExecuteSequenceList(list(Intercept@)).
+  return list(Intercept@, ReduceDistanceAndVelocity@).
 }
 
-function DockWithClosestVessel {
+function AlignPorts {
+  parameter index.
 
+  return lexicon(
+    "init", { Sequence(index, "Align Ports", SEQ["IDLE"]). },
+    "exec", {
+      wait 5.
+      Sequence(index, "Align Ports - Ports Aligned!", SEQ["COMPLETE"]).
+    }
+  ).
+}
+
+function DockingInsertion {
+  parameter index.
+
+  return lexicon(
+    "init", { Sequence(index, "Docking Insertion", SEQ["IDLE"]). },
+    "exec", {
+      wait 5.
+      Sequence(index, "Docking Insertion - Docking Complete!", SEQ["COMPLETE"]).
+    }
+  ).
+}
+
+function DockWithTarget {
+  return list(AlignPorts@, DockingInsertion@).
 }

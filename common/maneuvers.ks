@@ -1,3 +1,5 @@
+// maneuvers.ks
+
 runOncePath("0:/common/maneuver_core.ks").
 
 function ProtectFromPast {
@@ -130,7 +132,7 @@ function CalcHohmannInterceptTime {
   declare isAhead TO 0 < VDOT(vecKT, forVec).
 
   // Told this was needed, but it brewaks it. Is it backwards?
-  // if not isAhead { set current_phase_angle to 360 - current_phase_angle. } 
+  if isAhead { set current_phase_angle to 360 - current_phase_angle. } 
 
   declare relative_speed_deg is ship_speed_deg - target_speed_deg.
   return (transfer_phase_angle - current_phase_angle) / relative_speed_deg.

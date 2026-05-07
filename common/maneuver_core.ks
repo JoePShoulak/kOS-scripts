@@ -1,4 +1,4 @@
-// maneuver.ks
+// maneuver_core.ks
 
 runOncePath("0:/common/stats.ks").
 runOncePath("0:/common/util.ks").
@@ -110,7 +110,7 @@ function ExecuteManeuver {
   if startTime - time:seconds > 600 { warpTo(startTime - 600).  }
   lock steering to mnv:burnvector.
   wait until vang(ship:facing:forevector, mnv:burnvector) < 2.
-  warpTo(startTime - 10).
+  warpTo(startTime - 30).
   until time:seconds > startTime { ManeuverStats(). }
   lock throttle to 1.
   until IsManeuverComplete(mnv) { ManeuverStats(). }
@@ -119,4 +119,6 @@ function ExecuteManeuver {
   unlock throttle.
   
   remove mnv.
+
+  wait 1. 
 }

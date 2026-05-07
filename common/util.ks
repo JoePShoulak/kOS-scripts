@@ -1,3 +1,6 @@
+// util.ks
+
+
 // INIT TERMINAL: 
 //   Clears and brings up the kOS Terminal in-game
 function InitTerminal {
@@ -14,45 +17,6 @@ function ClearLine {
   parameter line.
 
   PRINT " ":padright(terminal:width) AT (0,line).
-}
-
-declare global SEQ is lexicon(
-  "IDLE", 0,
-  "ACTIVE", 1,
-  "COMPLETE", 2
-).
-
-function Sequence {
-  parameter number.
-  parameter text.
-  parameter state is SEQ["ACTIVE"].
-
-  local msg is "[" + (
-    choose "X" if state = SEQ["COMPLETE"] else
-    choose "-" if state = SEQ["ACTIVE"] else " "
-  ) + "] " + number + ". " + text.
-  print msg:padright(terminal:width) at(0, number + 3).
-}
-
-// TODO: Rework sequences to they return lists, which can be flattened by this function
-// That way, sequences can be combined very easily
-function ExecuteSequenceList {
-  parameter sequence_func_list.
-
-  declare sequence_list is list().
-
-  declare i is 1.
-  for seq_func in sequence_func_list {
-    sequence_list:add(seq_func(i)).
-    set i to i + 1.
-  }
-
-  for s in sequence_list { s["init"](). }
-  wait 1.
-  for s in sequence_list { s["exec"](). }
-  wait 3. 
-
-  for line in list(2, 3, 4, 5, 6, 7, 8, 9, 10) {ClearLine(line).} // TODO: Better clear
 }
 
 function TransferResourceByTag {
