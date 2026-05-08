@@ -11,8 +11,9 @@ function GetRVelToTarget { return ship:velocity:orbit - target:velocity:orbit. }
 // TODO: Polish this up
 function MatchVelocity {
   parameter zero is false.
+  set tgt to (choose target if target:istype("Vessel") else target:ship).
 
-  lock rvel to ship:velocity:orbit - target:velocity:orbit.
+  lock rvel to ship:velocity:orbit - tgt:velocity:orbit.
   declare inital_rvel is rvel.
 
   declare old_velocity is 2^64.
@@ -118,19 +119,135 @@ function ReduceDistanceAndVelocity {
 }
 
 function Rendezvous {
-  return list(Intercept@, ReduceDistanceAndVelocity@).
+  declare seqs is list().
+
+  if DistanceToTarget() > 200000 {
+    seqs:add(Intercept@).
+  }
+    seqs:add(ReduceDistanceAndVelocity@).
+
+  return seqs.
 }
 
-function AlignPorts {
+function PrepareForDocking {
   parameter index.
 
   return lexicon(
-    "init", { Sequence(index, "Align Ports", SEQ["IDLE"]). },
+    "init", { Sequence(index, "Prepare for Docking", SEQ["IDLE"]). },
     "exec", {
-      wait 5.
-      Sequence(index, "Align Ports - Ports Aligned!", SEQ["COMPLETE"]).
+      // Set control point to do0cking port (and deploy if needed)
+      Sequence(index, "Prepare for Docking - Setting control point...").
+      DrawDockingVectors().
+      set target to (choose target if target:istype("Vessel") else target:ship).
+
+      declare port is ship:dockingports[0].
+      declare docking_node_module is port:getmodule("ModuleDockingNode").
+      declare animator is port:getmodule("ModuleAnimateGeneric").
+      declare deploy_event is "deploy docking port". 
+
+      set rcs to false.
+      lock steering to (target:position - port:position).
+
+      set init_time to timestamp().
+      if animator:HasEvent(deploy_event) { animator:DoEvent(deploy_event). }
+      docking_node_module:DoEvent("control from here").
+      until timestamp() - init_time > 3 { wait 0.01. }.
+
+      // Request docking port from station
+      set init_time to timestamp().
+      Sequence(index, "Prepare for Docking - Requesting docking port...").
+      declare c is target:connection.
+      c:sendmessage(port:nodetype).
+      until timestamp() - init_time > 3 { wait 0.01. }.
+
+      // TODO: Be very careful with this messaging logic
+      until not ship:messages:empty { wait 0.01. }.
+
+      if ship:messages:pop:content = "ABORT" { return. }
+
+      // If granted, wait for station to align assigned docking port
+      Sequence(index, "Prepare for Docking - Docking port granted. Awaiting presentation...").
+
+      declare compatible_open_ports is list().
+      for p in target:dockingports {
+        if p:nodetype = port:nodetype and not p:haspartner { compatible_open_ports:add(p). }
+      }
+
+      // TODO: make a getclosest function
+      declare closest_distance is 2^64.
+      declare station_port is "".
+      for p in compatible_open_ports {
+        if (target:position - p:position):mag < closest_distance {
+          set closest_distance to (target:position - p:position):mag.
+          set station_port to p.
+        }
+      }
+
+      set up_dir to target:facing:forevector.
+      set target to station_port.
+      lock steering to lookDirUp(target:position - port:position, -up_dir).
+
+      until not ship:messages:empty { wait 0.01. }.
+      if ship:messages:pop:content = "ABORT" { return. }
+
+      until ship:angularVel:mag < 0.1 { wait 0.01.}.
+
     }
   ).
+}
+
+function DrawDockingVectors {
+  declare port is ship:dockingports[0].
+
+  set port_arrow to VecDraw(
+    { return port:position. },
+    { return port:portfacing:forevector * 5. },
+    RGB(0, 0, 1),
+    "Ship Port Normal",
+    1.0,
+    true,
+    0.2,
+    true,
+    true
+  ).
+
+  declare target_vessel is (choose target if target:istype("Vessel") else target:ship).
+  set prograde_arrow to VecDraw(
+    { return port:position. },
+    { return (ship:velocity:orbit - target_vessel:velocity:orbit):normalized*5. },
+    RGB(0, 1, 0),
+    "Ship Prograde",
+    1.0,
+    true,
+    0.2,
+    true,
+    true
+  ).
+
+  set target_arrow to VecDraw(
+    { return port:position. },
+    { return (target:position - port:position):normalized*5. },
+    RGB(1, 0, 1),
+    "Target",
+    1.0,
+    true,
+    0.2,
+    true,
+    true
+  ).
+}
+
+FUNCTION VectorFromPointToLine {
+    PARAMETER pointPosition.      
+    PARAMETER lineOriginPosition. 
+    PARAMETER lineDirectionVector.
+
+    SET normalizedLineDirection TO lineDirectionVector:NORMALIZED.
+    SET originToPointVector TO pointPosition - lineOriginPosition.
+    SET projectionLengthOntoLine TO VDOT(originToPointVector, normalizedLineDirection).
+    SET closestPointOnLine TO lineOriginPosition + normalizedLineDirection * projectionLengthOntoLine.
+
+    RETURN closestPointOnLine - pointPosition.
 }
 
 function DockingInsertion {
@@ -139,14 +256,32 @@ function DockingInsertion {
   return lexicon(
     "init", { Sequence(index, "Docking Insertion", SEQ["IDLE"]). },
     "exec", {
-      wait 5.
+      Sequence(index, "Docking Insertion - Intercepting docking vector...").
+
+      declare port is ship:dockingports[0].
+
+      lock dock_vec_int_vec to VectorFromPointToLine(port:position, target:position, target:portfacing:forevector).
+
+      lock rvel to ship:velocity:orbit - target:ship:velocity:orbit.
+      // lock steering to lookDirUp(target:position - port:position, -up_dir).
+      ship:partsnamedpattern("Cockpit")[0]:getmodule("ModuleCommand"):doevent("control from here").
+      lock steering to target:ship:facing:forevector.
+      // TODO: Turn this into a function
+      wait until vang(ship:facing:forevector, target:ship:facing:forevector) < 1 and ship:angularvel:mag < 0.1.
+
       Sequence(index, "Docking Insertion - Docking Complete!", SEQ["COMPLETE"]).
     }
   ).
 }
 
 function DockWithTarget {
-  return list(AlignPorts@, DockingInsertion@).
+  declare seq_list is list().
+  ship:messages:clear().
+
+  if (target:position - ship:position):mag > 2000 { return. }
+  if (target:position - ship:position):mag > 150 { seq_list:add(ReduceDistanceAndVelocity@). }
+  seq_list:add(PrepareForDocking@).
+  seq_list:add(DockingInsertion@).
+
+  return seq_list.
 }
-
-

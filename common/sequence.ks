@@ -14,9 +14,13 @@ function FlattenList {
   declare new_list is list().
 
   for li in bulky_list {
-    until li:length = 0{
-      new_list:add(li[0]).
-      li:remove(0).
+    if li:typename = "list" {
+      until li:length = 0{
+        new_list:add(li[0]).
+        li:remove(0).
+      }
+    } else {
+      new_list:add(li).
     }
   }
 
@@ -35,8 +39,6 @@ function Sequence {
   print msg:padright(terminal:width) at(0, number + 1).
 }
 
-// TODO: Rework sequences to they return lists, which can be flattened by this function
-// That way, sequences can be combined very easily
 function ExecuteSequenceList {
   parameter sequence_func_list.
 
@@ -53,7 +55,9 @@ function ExecuteSequenceList {
   for s in sequence_list { s["init"](). }
   wait 1.
   for s in sequence_list { s["exec"](). }
-  wait 3. 
+  wait 3.
 
-  for line in list(2, 3, 4, 5, 6, 7, 8, 9, 10) {ClearLine(line).} // TODO: Better clear
+  for line in list(2, 3, 4, 5, 6, 7, 8, 9, 10) {ClearLine(line).} // TODO: Better clear (and move it)
+
+  IdleScreen().
 }

@@ -4,57 +4,8 @@
 // DOCKING //
 /////////////
 
-declare domelights is ship:partsnamedpattern("Domelight").
-
-declare DSTS is lexicon(
-  "VACANT", 0,
-  "OCCUPIED", 1,
-  "ASSIGNED", 2
-).
-
-function GetDockingLights {
-  parameter port.
-
-  declare closest_light is domelights[0].
-  declare closest_distance is 2^64.
-  for l in domelights:sublist(1, domelights:length-1) {
-    declare d is (l:position - port:position):mag.
-    if d < closest_distance {
-      set closest_distance to d.
-      set closest_light to l.
-    }
-  }
-
-  declare docking_lights is list().
-  for l in domelights {
-    declare d is (l:position - port:position):mag.
-    if d < closest_distance + 1 {
-      docking_lights:add(l).
-    }
-  }
-
-  return docking_lights.
-}
-
-function UpdateDockingLights { 
-  parameter port.
-  parameter dock_status.
-
-  declare lights is GetDockingLights(port).
-
-  for l in lights {
-    declare light_module is l:GetModule("ModuleLight").
-    declare event is "blink " + (choose "on" if dock_status = DSTS["ASSIGNED"] else "off").
-    if light_module:HasEvent(event) { light_module:DoEvent(event). }
-  }
-}
 
 
-function dummy {
-  declare p is ship:dockingports[0].
-
-  UpdateDockingLights(p, DSTS["ASSIGNED"]).
-}
 
 /////////////
 // UTILITY //
@@ -78,26 +29,39 @@ function ClearLine {
   PRINT " ":padright(terminal:width) AT (0,line).
 }
 
+
 function TransferResourceByTag {
   parameter res, from_tag, to_tag.
 
-  set t to TransferAll(res, ship:partstagged(from_tag), ship:partstagged(to_tag)).
-    set t:active to true.
-    print " ".
-    print "Transferring " + res + "...".
-    wait until t:status = "Failed" or t:status = "Finished".
-    if t:message:contains("connected") { print "  No source/destination.". }
-    else if t:message:contains("Transferred") { print "  Transfer complete!". }
-    else { print "  Unkown error.". }
+  return {
+    parameter index.
+
+    return lexicon(
+      "init", { Sequence(index, "Transfer " + res, SEQ["IDLE"]). },
+      "exec", {
+        Sequence(index, "Transfer " + res + " - Transfering..."). 
+        set t to TransferAll(res, ship:partstagged(from_tag), ship:partstagged(to_tag)).
+        set t:active to true.
+        wait until t:status = "Failed" or t:status = "Finished".
+        if t:message:contains("connected") { Sequence(index, "Transfer " + res + " - No source/destination!", SEQ["COMPLETE"]). }
+        else if t:message:contains("Transferred") { Sequence(index, "Transfer " + res + " - Transfer complete!", SEQ["COMPLETE"]). }
+        else { Sequence(index, "Transfer " + res + " - Unknown error!", SEQ["COMPLETE"]). } // TODO: Add SEQ:ERROR ?
+      }
+    ).
+  }.
 }
 
 function TransferAllResourcesByTag {
   parameter from_tag, to_tag.
 
-    for res in ship:resources { 
-      if res:name = "ElectricCharge" {} 
-      else { TransferResourceByTag(res:name, from_tag, to_tag). }
-    }
+  declare transfer_list is list().
+
+  for res in ship:resources { 
+    if res:name = "ElectricCharge" {} 
+    else { transfer_list:add(TransferResourceByTag(res:name, from_tag, to_tag)). }
+  }
+
+  return transfer_list.
 }
 
 function Alert {
@@ -156,7 +120,13 @@ function ApoapsisTime {
   return apoapsis_time.
 }
 
+// TODO: This is getting messy
+function WaitForKeypress {
+
+}
+
 function IdleScreen {
+  parameter delegate is {}.
   clearScreen.
 
   // TODO: Find better art, maybe a different picture in flight, etc. 
@@ -173,7 +143,7 @@ function IdleScreen {
   PRINT "  |@| |@|  | |"   AT (terminal:width/2 - 8, terminal:height/2 + 4).
   PRINT "___________|_|_"  AT (terminal:width/2 - 8, terminal:height/2 + 5).
 
-  PRINT "Press any button to continue".
-  until terminal:input:haschar() { IdleStats(). }
+  PRINT "Press any button to continue":padright(100) at(0,0).
+  until terminal:input:haschar() { {IdleStats(). delegate(). } }
   terminal:input:clear().
-}
+  }

@@ -18,17 +18,6 @@ function PrintStatText {
   PRINT (label + ": " + text):padright(padding) AT(col*padding, start_row + row).
 }
 
-function ShipMach { // TODO: Test this
-  declare gamma is body:atm:adiabaticindex.
-  declare molar_mass is body:atm:molarmass.
-  declare temp is body:atm:altitudetemperature(ship:altitude).
-  declare R_val to 8.31442618. // J/(mol*K)
-
-  declare speed_of_sound is sqrt(gamma * R_val * temp / molar_mass).
-
-  return ship:airspeed / speed_of_sound. 
-}
-
 function ResourceFillPercentage {
   parameter res.
 
@@ -47,7 +36,6 @@ declare s_air_speed    is CreateStat("Speed",       { return round(ship:airspeed
 declare s_thrust       is CreateStat("Thrust",      { return round(ship:thrust,         2) + "N".      } ).
 declare s_v_speed      is CreateStat("V. Speed",    { return round(ship:verticalspeed,  2) + "m/s".    } ).
 declare s_q            is CreateStat("q",           { return round(ship:q,              2) + "ATM".    } ).
-declare s_mach         is CreateStat("Mach",        { return round(ShipMach,            2).            } ).
 declare s_fuel         is CreateStat("Fuel",        { return round(ship:deltav:current, 2) + "m/s".    } ).
 
 // Maneuver
@@ -73,6 +61,7 @@ declare s_supplies     is CreateStat("Supplies",    { return ResourceFillPercent
 declare s_electricity  is CreateStat("Power",       { return ResourceFillPercentage("ElectricCharge"). } ).
 
 function DrawStatPanel {
+  // TODO: Add titles for these?
   parameter s1, s2, s3, s4, s5, s6, s7, s8.
 
   declare i is 0.
@@ -92,7 +81,8 @@ function StationStats {
   ).
 }
 
-function BaseStats { // TODO: Improve this
+// TODO: improve this stat panel
+function BaseStats { 
   return DrawStatPanel(
     s_liquidfuel, s_fertilizer, s_machinery, s_materialkits,
     s_oxidizer,   s_monoprop,   s_supplies,  s_electricity
@@ -109,7 +99,7 @@ function FlightStats_SSTO {
 function FlightStats {
   return DrawStatPanel(
     s_air_speed,  s_altitude, s_apoapsis,  s_thrust,
-    s_v_speed,    s_q,        s_periapsis, s_mach
+    s_v_speed,    s_q,        s_periapsis, s_fuel
   ).
 }
 
@@ -120,7 +110,8 @@ function ManeuverStats {
   ).
 }
 
-function OrbitStats { // TODO: improve this one
+// TODO: improve this stat panel
+function OrbitStats { 
   return DrawStatPanel(
     s_air_speed, s_altitude, s_apoapsis,  s_thrust,
     s_v_speed,   s_q,        s_periapsis, s_period
@@ -133,7 +124,7 @@ function RendezvousStats {
 
 // TODO: Fix this, have better conditional idle categories
 function IdleStats {
-  declare SSTO is ship:engines[0]:multimode.
+  declare SSTO is ship:engines[0]:multimode. // TODO: Handle this better (on both ends)
 
   if ship:status = "Prelaunch" or ship:q > 0{ (choose FlightStats_SSTO() if SSTO else FlightStats()). }
   else if ship:type = "Station" { StationStats(). }
