@@ -145,9 +145,11 @@ function Handle_Docking {
 
     // Wait for TODO: add failure options
     wait 5.
-    WAIT UNTIL ship:angularvel:mag < 1.
+    WAIT UNTIL ship:angularvel:mag < 0.1.
 
     tgt:connection:sendmessage("READY").
+
+    // Wait until port conected with failsafes
 
     // Cleanup
     Handle_Docking().

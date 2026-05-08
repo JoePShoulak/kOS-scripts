@@ -146,7 +146,7 @@ function PrepareForDocking {
       declare deploy_event is "deploy docking port". 
 
       set rcs to false.
-      lock steering to (target:position - port:position).
+      lock steering to lookDirUp(target:facing:forevector, (ship:position - target:position)).
 
       set init_time to timestamp().
       if animator:HasEvent(deploy_event) { animator:DoEvent(deploy_event). }
@@ -192,6 +192,7 @@ function PrepareForDocking {
 
       until ship:angularVel:mag < 0.1 { wait 0.01.}.
 
+      Sequence(index, "Prepare for Docking - Station and ship ready!", SEQ["COMPLETE"]).
     }
   ).
 }
@@ -226,7 +227,7 @@ function DrawDockingVectors {
 
   set target_arrow to VecDraw(
     { return port:position. },
-    { return (target:position - port:position):normalized*5. },
+    { return target:position - port:position. },
     RGB(1, 0, 1),
     "Target",
     1.0,
@@ -250,6 +251,7 @@ FUNCTION VectorFromPointToLine {
     RETURN closestPointOnLine - pointPosition.
 }
 
+// TODO: Add protection to make sure we're not directly on top of or below the station
 function DockingInsertion {
   parameter index.
 
@@ -260,14 +262,29 @@ function DockingInsertion {
 
       declare port is ship:dockingports[0].
 
-      lock dock_vec_int_vec to VectorFromPointToLine(port:position, target:position, target:portfacing:forevector).
 
       lock rvel to ship:velocity:orbit - target:ship:velocity:orbit.
       // lock steering to lookDirUp(target:position - port:position, -up_dir).
       ship:partsnamedpattern("Cockpit")[0]:getmodule("ModuleCommand"):doevent("control from here").
-      lock steering to target:ship:facing:forevector.
+      lock steering to lookDirUp(target:ship:facing:forevector, (ship:position - target:position)).
       // TODO: Turn this into a function
       wait until vang(ship:facing:forevector, target:ship:facing:forevector) < 1 and ship:angularvel:mag < 0.1.
+
+      set RAWtoSHIP to ship:facing:inverse.
+      lock target_vec_local to (target:position - ship:position) * RAWtoSHIP.
+      
+      set fore_pid to pidloop(20, 0.1, 30, -1, 1).
+
+      set rcs to true.
+
+      until target_vec_local:mag < 0.01 {
+        set desired_forward_val to fore_pid:update(time:seconds, target_vec_local:z).
+        set ship:control:translation to v(0, 0, -desired_forward_val).
+      }
+
+      // when dock_vec_int_vec:mag < 10 then {
+      //   until rvel:mag < 0.1 { set ship:control:translation to  }
+      // }
 
       Sequence(index, "Docking Insertion - Docking Complete!", SEQ["COMPLETE"]).
     }
