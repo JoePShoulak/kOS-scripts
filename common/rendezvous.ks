@@ -258,10 +258,9 @@ function DockingInsertion {
   return lexicon(
     "init", { Sequence(index, "Docking Insertion", SEQ["IDLE"]). },
     "exec", {
-      Sequence(index, "Docking Insertion - Intercepting docking vector...").
+      Sequence(index, "Docking Insertion - Intercepting dock line...").
 
       declare port is ship:dockingports[0].
-
 
       lock rvel to ship:velocity:orbit - target:ship:velocity:orbit.
       // lock steering to lookDirUp(target:position - port:position, -up_dir).
@@ -271,20 +270,35 @@ function DockingInsertion {
       wait until vang(ship:facing:forevector, target:ship:facing:forevector) < 1 and ship:angularvel:mag < 0.1.
 
       set RAWtoSHIP to ship:facing:inverse.
-      lock target_vec_local to (target:position - ship:position) * RAWtoSHIP.
+      lock target_vec_local to (port:position - target:position) * RAWtoSHIP.
+      lock rvel_local to rvel * RAWtoSHIP. 
       
-      set fore_pid to pidloop(20, 0.1, 30, -1, 1).
+      set pid_x to pidloop(35, 0.1, 60, -1, 1).
+      set pid_z to pidloop(35, 0.1, 150, -1, 1).
+      //
+      set pid_y to pidloop(35, 0.1, 60, -1, 1).
 
       set rcs to true.
 
-      until target_vec_local:mag < 0.01 {
-        set desired_forward_val to fore_pid:update(time:seconds, target_vec_local:z).
-        set ship:control:translation to v(0, 0, -desired_forward_val).
+      until target_vec_local:x < 0.01 and target_vec_local:z < 0.01
+      and rvel_local:x < 0.1 and rvel_local:z < 0.1 {
+        set desired_x to pid_x:update(time:seconds, target_vec_local:x).
+        set desired_z to pid_z:update(time:seconds, target_vec_local:z).
+        set ship:control:translation to v(desired_x, 0, desired_z).
       }
 
-      // when dock_vec_int_vec:mag < 10 then {
-      //   until rvel:mag < 0.1 { set ship:control:translation to  }
-      // }
+      Sequence(index, "Docking Insertion - Proceeding to dock...").
+
+      set pid_y:setpoint to -1.
+      when target_vec_local:mag < 20 then { set pid_y:setpoint to -0.1. }
+      when target_vec_local:mag < 1 then { unlock steering. }
+
+      until port:haspartner { 
+        set desired_x to pid_x:update(time:seconds, target_vec_local:x).
+        set desired_y to pid_y:update(time:seconds, rvel_local:y).
+        set desired_z to pid_z:update(time:seconds, target_vec_local:z).
+        set ship:control:translation to v(desired_x, desired_y, desired_z).
+      }
 
       Sequence(index, "Docking Insertion - Docking Complete!", SEQ["COMPLETE"]).
     }

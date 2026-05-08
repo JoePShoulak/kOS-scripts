@@ -99,7 +99,8 @@ function Handle_Docking {
 
     declare compatible_open_ports is list().
     for p in ship:dockingports {
-      if p:nodetype = port_type and not p:haspartner { compatible_open_ports:add(p). }
+      // TODO: Make sure it's a station port too
+      if p:nodetype = port_type and not p:haspartner and p:tag = "station" { compatible_open_ports:add(p). }
     }
 
     if compatible_open_ports:length = 0 {
@@ -150,7 +151,9 @@ function Handle_Docking {
     tgt:connection:sendmessage("READY").
 
     // Wait until port conected with failsafes
+    wait until port:haspartner.
 
+    // TODO: Fix the "keep pointing at target" problem
     // Cleanup
     Handle_Docking().
   }

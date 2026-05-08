@@ -21,7 +21,7 @@ declare launch_options is list(
     set target to "Kerbin Beta".
     ExecuteSequenceList(list(SSTOToOrbit(), Rendezvous(), DockWithTarget())).
   }), // TODO: Wait 4 hours and return home
-  CreateOption("Exit", {})
+  CreateOption("Exit", IdleScreen@) 
 ).
 
 declare orbit_options is list(
