@@ -88,6 +88,7 @@ FUNCTION RotateVector {
 
 // Docking a ship to a station from the station's persepctive
 function Handle_Docking {
+  // TODO: Go to a custom screen for this
   for port in ship:dockingports {
     UpdateDockingLights(port, 0). // FIXME
   }

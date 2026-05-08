@@ -118,6 +118,7 @@ function ReduceDistanceAndVelocity {
   ).
 }
 
+// TODO: Match intercept plane
 function Rendezvous {
   declare seqs is list().
 
@@ -265,7 +266,8 @@ function DockingInsertion {
       lock rvel to ship:velocity:orbit - target:ship:velocity:orbit.
       // lock steering to lookDirUp(target:position - port:position, -up_dir).
       ship:partsnamedpattern("Cockpit")[0]:getmodule("ModuleCommand"):doevent("control from here").
-      lock steering to lookDirUp(target:ship:facing:forevector, (ship:position - target:position)).
+      declare dir is lookDirUp(target:ship:facing:forevector, (ship:position - target:position)).
+      lock steering to dir.
       // TODO: Turn this into a function
       wait until vang(ship:facing:forevector, target:ship:facing:forevector) < 1 and ship:angularvel:mag < 0.1.
 
@@ -287,11 +289,16 @@ function DockingInsertion {
         set ship:control:translation to v(desired_x, 0, desired_z).
       }
 
+      wait 1.
+
+      until rvel_local:y > 1 { set ship:control:translation to v(0,1,0). }
+
       Sequence(index, "Docking Insertion - Proceeding to dock...").
 
       set pid_y:setpoint to -1.
       when target_vec_local:mag < 20 then { set pid_y:setpoint to -0.1. }
-      when target_vec_local:mag < 1 then { unlock steering. }
+
+      until rvel:mag > 2 { set ship:control:translation to v(0,-1,0). }
 
       until port:haspartner { 
         set desired_x to pid_x:update(time:seconds, target_vec_local:x).
@@ -301,16 +308,16 @@ function DockingInsertion {
       }
 
       Sequence(index, "Docking Insertion - Docking Complete!", SEQ["COMPLETE"]).
+      SET SHIP:CONTROL:NEUTRALIZE to True.
+      shutdown. // TODO: Handle better? Main issue is target loss
     }
   ).
 }
 
 function DockWithTarget {
   declare seq_list is list().
-  ship:messages:clear().
+  ship:messages:clear(). // TODO: move this
 
-  if (target:position - ship:position):mag > 2000 { return. }
-  if (target:position - ship:position):mag > 150 { seq_list:add(ReduceDistanceAndVelocity@). }
   seq_list:add(PrepareForDocking@).
   seq_list:add(DockingInsertion@).
 
