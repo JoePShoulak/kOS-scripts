@@ -1,6 +1,6 @@
 // sequences.ks
 
-runOncePath("0:/common/util.ks").
+runOncePath("0:/util/core.ks").
 
 declare global SEQ is lexicon(
   "IDLE", 0,
@@ -52,12 +52,14 @@ function ExecuteSequenceList {
     set i to i + 1.
   }
 
+  // Print sequence list
   for s in sequence_list { s["init"](). }
   wait 1.
+  // Execute sequence list
   for s in sequence_list { s["exec"](). }
   wait 3.
 
-  for line in list(2, 3, 4, 5, 6, 7, 8, 9, 10) {ClearLine(line).} // TODO: Better clear (and move it)
+  for line in list(2, 3, 4, 5, 6, 7, 8, 9, 10) { ClearLine(line). } // TODO: Better clear (and move it)
 
   IdleScreen().
 }

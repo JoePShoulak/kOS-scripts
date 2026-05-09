@@ -25,40 +25,44 @@ function ResourceFillPercentage {
     if res = resource:name { set res to resource. }
   }
 
+  if res:capacity = 0 { return "N/a". }
+
   return round(res:amount/res:capacity*100, 2) + "%".
 }
 
 // Flight
-declare s_altitude     is CreateStat("Altitude",    { return round(altitude/1000,       2) + "km".     } ).
-declare s_apoapsis     is CreateStat("Apoapsis",    { return round(apoapsis/1000,       2) + "km".     } ).
-declare s_periapsis    is CreateStat("Periapsis",   { return round(periapsis/1000,      2) + "km".     } ).
-declare s_air_speed    is CreateStat("Speed",       { return round(ship:airspeed,       2) + "m/s".    } ).
-declare s_thrust       is CreateStat("Thrust",      { return round(ship:thrust,         2) + "N".      } ).
-declare s_v_speed      is CreateStat("V. Speed",    { return round(ship:verticalspeed,  2) + "m/s".    } ).
-declare s_q            is CreateStat("q",           { return round(ship:q,              2) + "ATM".    } ).
-declare s_fuel         is CreateStat("Fuel",        { return round(ship:deltav:current, 2) + "m/s".    } ).
-
-// Maneuver
-declare s_mnv_eta      is CreateStat("ETA",         { return round(nextnode:eta,        2) + "s".      } ).
-declare s_nodes        is CreateStat("Nodes",       { return round(allnodes:length,     2) + "".       } ).
-declare s_dv_total     is CreateStat("Speed",       { return round(nextnode:deltav:mag, 2) + "m/s".    } ).
-declare s_dv_prograde  is CreateStat("Speed",       { return round(nextnode:prograde,   2) + "m/s".    } ).
-declare s_dv_radial    is CreateStat("Speed",       { return round(nextnode:radialout,  2) + "m/s".    } ).
-declare s_dv_normal    is CreateStat("Speed",       { return round(nextnode:normal,     2) + "m/s".    } ).
+declare s_altitude     is CreateStat("Altitude",    { return round(altitude/1000,       2) + "km".           } ).
+declare s_apoapsis     is CreateStat("Apoapsis",    { return round(apoapsis/1000,       2) + "km".           } ).
+declare s_periapsis    is CreateStat("Periapsis",   { return round(periapsis/1000,      2) + "km".           } ).
+declare s_air_speed    is CreateStat("Speed",       { return round(ship:airspeed,       2) + "m/s".          } ).
+declare s_thrust       is CreateStat("Thrust",      { return round(ship:thrust,         2) + "N".            } ).
+declare s_v_speed      is CreateStat("V. Speed",    { return round(ship:verticalspeed,  2) + "m/s".          } ).
+declare s_q            is CreateStat("q",           { return round(ship:q,              2) + "ATM".          } ).
+declare s_fuel         is CreateStat("Fuel",        { return round(ship:deltav:current, 2) + "m/s".          } ).
+      
+// Maneuver      
+declare s_mnv_eta      is CreateStat("ETA",         { return round(nextnode:eta,        2) + "s".            } ).
+declare s_nodes        is CreateStat("Nodes",       { return round(allnodes:length,     2) + "".             } ).
+//TODO: Fix these below      
+declare s_dv_total     is CreateStat("Speed",       { return round(nextnode:deltav:mag, 2) + "m/s".          } ).
+declare s_dv_prograde  is CreateStat("Speed",       { return round(nextnode:prograde,   2) + "m/s".          } ).
+declare s_dv_radial    is CreateStat("Speed",       { return round(nextnode:radialout,  2) + "m/s".          } ).
+declare s_dv_normal    is CreateStat("Speed",       { return round(nextnode:normal,     2) + "m/s".          } ).
+declare s_phase_angle  is CreateStat("Phase",       { return round(CalculatePhaseAngle(Waypoint("KSC")), 2). } ).
 
 // Misc
-declare s_enginemode   is CreateStat("Engines",     { return ship:engines[0]:mode.                     } ).
-declare s_period       is CreateStat("Period",      { return timestamp(orbit:period):clock.            } ).
-
-// Resources
-declare s_liquidfuel   is CreateStat("L. Fuel",     { return ResourceFillPercentage("LiquidFuel").     } ).
-declare s_oxidizer     is CreateStat("Oxidizer",    { return ResourceFillPercentage("Oxidizer").       } ).
-declare s_fertilizer   is CreateStat("Fertilizer",  { return ResourceFillPercentage("Fertilizer").     } ).
-declare s_machinery    is CreateStat("Machinery",   { return ResourceFillPercentage("Machinery").      } ).
-declare s_materialkits is CreateStat("Materials",   { return ResourceFillPercentage("MaterialKits").   } ).
-declare s_monoprop     is CreateStat("Monoprop",    { return ResourceFillPercentage("Monopropellant"). } ).
-declare s_supplies     is CreateStat("Supplies",    { return ResourceFillPercentage("Supplies").       } ).
-declare s_electricity  is CreateStat("Power",       { return ResourceFillPercentage("ElectricCharge"). } ).
+declare s_enginemode   is CreateStat("Engines",     { return ship:engines[0]:mode.                           } ).
+declare s_period       is CreateStat("Period",      { return timestamp(orbit:period):clock.                  } ).
+      
+// Resources      
+declare s_liquidfuel   is CreateStat("L. Fuel",     { return ResourceFillPercentage("LiquidFuel").           } ).
+declare s_oxidizer     is CreateStat("Oxidizer",    { return ResourceFillPercentage("Oxidizer").             } ).
+declare s_fertilizer   is CreateStat("Fertilizer",  { return ResourceFillPercentage("Fertilizer").           } ).
+declare s_machinery    is CreateStat("Machinery",   { return ResourceFillPercentage("Machinery").            } ).
+declare s_materialkits is CreateStat("Materials",   { return ResourceFillPercentage("MaterialKits").         } ).
+declare s_monoprop     is CreateStat("Monoprop",    { return ResourceFillPercentage("Monopropellant").       } ).
+declare s_supplies     is CreateStat("Supplies",    { return ResourceFillPercentage("Supplies").             } ).
+declare s_electricity  is CreateStat("Power",       { return ResourceFillPercentage("ElectricCharge").       } ).
 
 function DrawStatPanel {
   // TODO: Add titles for these?
@@ -93,6 +97,13 @@ function FlightStats_SSTO {
   return DrawStatPanel(
     s_air_speed,  s_altitude, s_apoapsis,  s_thrust,
     s_v_speed,    s_q,        s_periapsis, s_enginemode
+  ).
+}
+
+function FlightStats_Landing {
+  return DrawStatPanel(
+    s_air_speed,  s_altitude, s_apoapsis,  s_thrust,
+    s_v_speed,    s_q,        s_periapsis, s_phase_angle
   ).
 }
 

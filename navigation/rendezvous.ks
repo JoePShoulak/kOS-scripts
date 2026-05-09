@@ -1,7 +1,7 @@
 // rendezvous.ks
 
-runOncePath("0:/common/maneuvers.ks").
-runOncePath("0:/common/util.ks").
+runOncePath("0:/navigation/maneuvers.ks").
+runOncePath("0:/util/core.ks").
 runOncePath("0:/common/sequence.ks").
 
 declare target_distance is 100.
@@ -120,6 +120,9 @@ function ReduceDistanceAndVelocity {
 
 // TODO: Match intercept plane
 function Rendezvous {
+  parameter tgt is target.
+  set target to tgt.
+  
   declare seqs is list().
 
   if DistanceToTarget() > 200000 {
@@ -142,7 +145,6 @@ function PrepareForDocking {
       set target to (choose target if target:istype("Vessel") else target:ship).
 
       declare port is ship:dockingports[0].
-      declare docking_node_module is port:getmodule("ModuleDockingNode").
       declare animator is port:getmodule("ModuleAnimateGeneric").
       declare deploy_event is "deploy docking port". 
 
@@ -151,7 +153,6 @@ function PrepareForDocking {
 
       set init_time to timestamp().
       if animator:HasEvent(deploy_event) { animator:DoEvent(deploy_event). }
-      docking_node_module:DoEvent("control from here").
       until timestamp() - init_time > 3 { wait 0.01. }.
 
       // Request docking port from station
@@ -265,7 +266,6 @@ function DockingInsertion {
 
       lock rvel to ship:velocity:orbit - target:ship:velocity:orbit.
       // lock steering to lookDirUp(target:position - port:position, -up_dir).
-      ship:partsnamedpattern("Cockpit")[0]:getmodule("ModuleCommand"):doevent("control from here").
       declare dir is lookDirUp(target:ship:facing:forevector, (ship:position - target:position)).
       lock steering to dir.
       // TODO: Turn this into a function
@@ -275,14 +275,14 @@ function DockingInsertion {
       lock target_vec_local to (port:position - target:position) * RAWtoSHIP.
       lock rvel_local to rvel * RAWtoSHIP. 
       
-      set pid_x to pidloop(35, 0.1, 60, -1, 1).
+      set pid_x to pidloop(10, 0.1, 60, -1, 1).
       set pid_z to pidloop(35, 0.1, 150, -1, 1).
       //
       set pid_y to pidloop(35, 0.1, 60, -1, 1).
 
       set rcs to true.
 
-      until target_vec_local:x < 0.01 and target_vec_local:z < 0.01
+      until target_vec_local:x < 0.1 and target_vec_local:z < 0.1
       and rvel_local:x < 0.1 and rvel_local:z < 0.1 {
         set desired_x to pid_x:update(time:seconds, target_vec_local:x).
         set desired_z to pid_z:update(time:seconds, target_vec_local:z).
@@ -291,12 +291,11 @@ function DockingInsertion {
 
       wait 1.
 
-      until rvel_local:y > 1 { set ship:control:translation to v(0,1,0). }
-
       Sequence(index, "Docking Insertion - Proceeding to dock...").
 
       set pid_y:setpoint to -1.
-      when target_vec_local:mag < 20 then { set pid_y:setpoint to -0.1. }
+      pid_y:reset().
+      when target_vec_local:mag < 10 then { set pid_y:setpoint to -0.2. }
 
       until rvel:mag > 2 { set ship:control:translation to v(0,-1,0). }
 
@@ -309,7 +308,9 @@ function DockingInsertion {
 
       Sequence(index, "Docking Insertion - Docking Complete!", SEQ["COMPLETE"]).
       SET SHIP:CONTROL:NEUTRALIZE to True.
-      shutdown. // TODO: Handle better? Main issue is target loss
+      unlock steering. 
+      unlock throttle.
+      ClearVecDraws().
     }
   ).
 }

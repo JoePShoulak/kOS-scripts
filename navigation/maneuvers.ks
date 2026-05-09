@@ -1,6 +1,6 @@
 // maneuvers.ks
 
-runOncePath("0:/common/maneuver_core.ks").
+runOncePath("0:/util/maneuver_core.ks").
 
 function ProtectFromPast {
   parameter OriginalFunction.
@@ -122,17 +122,9 @@ function CalcHohmannInterceptTime {
   declare target_speed_deg is 360 / target:orbit:period.
   declare target_travel_deg is target_speed_deg * transfer_time.
 
-  declare vecKS is ship:position - ship:body:position.
-  declare vecKT is target:position - target:body:position.
-
+ 
   declare transfer_phase_angle is 180 + target_travel_deg.
-  declare current_phase_angle is vang(vecKS, vecKT).
-
-  declare forVec TO VXCL(vecKS, SHIP:VELOCITY:ORBIT).
-  declare isAhead TO 0 < VDOT(vecKT, forVec).
-
-  // Told this was needed, but it brewaks it. Is it backwards?
-  if isAhead { set current_phase_angle to 360 - current_phase_angle. } 
+  declare current_phase_angle is CalculatePhaseAngle(target).
 
   declare relative_speed_deg is ship_speed_deg - target_speed_deg.
   return (transfer_phase_angle - current_phase_angle) / relative_speed_deg.
@@ -142,7 +134,8 @@ function HohmannTransferToTarget {
   parameter tgt is target.
   set target to tgt.
 
-  // Steps 1 and 2
+  // TODO: Plane transfer before the transfer
+
   declare SMA is CalcHohmannInterceptSMA().
   declare time_to_wait is CalcHohmannInterceptTime(SMA).
   declare dV is CalcDVForNewSMA(SMA).

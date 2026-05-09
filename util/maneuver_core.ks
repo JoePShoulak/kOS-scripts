@@ -1,7 +1,7 @@
 // maneuver_core.ks
 
 runOncePath("0:/common/stats.ks").
-runOncePath("0:/common/util.ks").
+runOncePath("0:/util/core.ks").
 
 function maneuverBurnTime {
   parameter mnv.

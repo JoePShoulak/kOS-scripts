@@ -1,6 +1,6 @@
 // menu.ks
 
-runOncePath("0:/common/util.ks").
+runOncePath("0:/util/core.ks").
 
 function CreateOption {
   parameter label.

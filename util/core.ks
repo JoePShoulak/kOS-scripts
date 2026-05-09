@@ -1,11 +1,6 @@
 // util.ks
 
-/////////////
-// DOCKING //
-/////////////
-
-
-
+runOncePath("0:/common/stats.ks").
 
 /////////////
 // UTILITY //
@@ -51,6 +46,7 @@ function TransferResourceByTag {
   }.
 }
 
+// TODO: Redo this with elements
 function TransferAllResourcesByTag {
   parameter from_tag, to_tag.
 
@@ -62,24 +58,6 @@ function TransferAllResourcesByTag {
   }
 
   return transfer_list.
-}
-
-function Alert {
-  parameter message.
-
-  local my_gui is GUI(200).
-  declare label is my_gui:addlabel(message).
-  SET label:STYLE:ALIGN TO "CENTER".
-  SET label:STYLE:HSTRETCH TO True. // Fill horizontally
-  LOCAL ok TO my_gui:ADDBUTTON("OK").
-  my_gui:SHOW().
-
-  LOCAL isDone IS FALSE.
-  function myClickChecker { SET isDone TO TRUE. }
-  SET ok:ONCLICK TO myClickChecker@. // This could also be an anonymous function instead.
-  wait until isDone.
-
-  my_gui:HIDE().
 }
 
 function AltitudeAt {
@@ -120,30 +98,61 @@ function ApoapsisTime {
   return apoapsis_time.
 }
 
-// TODO: This is getting messy
-function WaitForKeypress {
+function CalculatePhaseAngle {
+  parameter object.
 
+  declare ship_vec is ship:position - ship:body:position.
+  declare obj_vec is object:position - object:body:position.
+  declare phase_angle is vang(ship_vec, obj_vec).
+
+  declare force_vec TO VXCL(ship_vec, SHIP:VELOCITY:ORBIT).
+  declare is_ahead TO 0 < VDOT(obj_vec, force_vec).
+
+  if is_ahead { set phase_angle to 360 - phase_angle. } 
+
+  return phase_angle.
+}
+
+// 30x30 icon centered on screen
+// padright is a function that lets you add spaces to the right until the paraeter length is reached
+function DrawAsciiArt {
+  parameter iterator.
+
+  local lines is list().
+  until not iterator:next() {
+    lines:add(iterator:value()).
+  }
+
+  // Get max line length (for centering purposes)
+  local max_len is 0.
+  for line in lines {
+    if line:length > max_len {
+      set max_len to line:length.
+    }
+  }
+
+  local y is (terminal:height - lines:length) / 2.
+  local x is (terminal:width - max_len) / 2.
+  for line in lines {
+    print line at (x, y).
+    set y to y + 1.
+  }
+}
+
+function GetAsciiArtIterator {
+  parameter name.
+
+  return archive:open("/ascii_art/" + name + ".txt"):readall:iterator.
 }
 
 function IdleScreen {
   parameter delegate is {}.
   clearScreen.
 
-  // TODO: Find better art, maybe a different picture in flight, etc. 
-  PRINT "             ___" AT (terminal:width/2 - 8, terminal:height/2 - 6).
-  PRINT "     |     | |"   AT (terminal:width/2 - 8, terminal:height/2 - 5).
-  PRINT "    / \    | |"   AT (terminal:width/2 - 8, terminal:height/2 - 4).
-  PRINT "   |--o|===|-|"   AT (terminal:width/2 - 8, terminal:height/2 - 3).
-  PRINT "   |---|   |K|"   AT (terminal:width/2 - 8, terminal:height/2 - 2).
-  PRINT "  /     \  |S|"   AT (terminal:width/2 - 8, terminal:height/2 - 1).
-  PRINT " | |     | |C|"   AT (terminal:width/2 - 8, terminal:height/2    ).
-  PRINT " | |     |=| |"   AT (terminal:width/2 - 8, terminal:height/2 + 1).
-  PRINT " | |     | | |"   AT (terminal:width/2 - 8, terminal:height/2 + 2).
-  PRINT " |_______| |_|"   AT (terminal:width/2 - 8, terminal:height/2 + 3).
-  PRINT "  |@| |@|  | |"   AT (terminal:width/2 - 8, terminal:height/2 + 4).
-  PRINT "___________|_|_"  AT (terminal:width/2 - 8, terminal:height/2 + 5).
+  // TODO: Find more/better art
+  DrawAsciiArt(GetAsciiArtIterator("rocket_prelaunch")).
 
   PRINT "Press any button to continue":padright(100) at(0,0).
   until terminal:input:haschar() { {IdleStats(). delegate(). } }
   terminal:input:clear().
-  }
+}
