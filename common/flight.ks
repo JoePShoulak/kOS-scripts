@@ -124,3 +124,36 @@ function PitchToOrbit {
 function SSTOToOrbit {
   return list(Takeoff@, LevelFlightToSpeed@, PitchToOrbit@).
 }
+
+function ReturnToKerbin_SSTO {
+  parameter index.
+
+  return lexicon(
+    "init", { Sequence(index, "Returning to Kerbin", SEQ["IDLE"]). },
+    "exec", {
+      // TODO: Figure out how to do this
+      // set target to "Kerbal Space Center".
+
+      if apoapsis > 100000 or periapsis > 100000 {
+        Sequence(index, "Returning to Kerbin - Transferring to smaller orbit...").
+        // TODO: no most likely
+         ChangeAPAtPE(100000). ChangeAPAtPE(100000). // This turns our old periapsis into our new apoapsis (most likely)
+      }
+
+      // TODO: Do this at the right time to land at KSC
+      Sequence(index, "Returning to Kerbin - Lowering PE to within atmosphere...").
+      ChangePEAtAP(30000).
+
+      Sequence(index, "Returning to Kerbin - Descending with high AoA...").
+      set warpmode to "RAILS".
+      set warp to 3.
+      when altitude < 70000 then { set warpmode to "PHYSICS". set warp to 3. }
+      lock steering to heading(90, 20). 
+      when altitude < 50000 then { set warp to 0. }
+      until ship:airspeed < 2000 { wait 0.001. }
+
+      Sequence(index, "Returning to Kerbin - Coasting with low AoA...").
+      until ship:airspeed < 500 { lock steering to heading(90, 5). }
+    }
+  ).
+}

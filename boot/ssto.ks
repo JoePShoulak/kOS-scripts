@@ -25,7 +25,7 @@ declare launch_options is list(
 ).
 
 declare orbit_options is list(
-  CreateOption("Kerbal Space Center",      {}), // TODO: Return home
+  CreateOption("Kerbal Space Center",      { ExecuteSequenceList(list(ReturnToKerbin_SSTO@)). }), // TODO: Return home
   CreateOption("Rendezvous with target", { ExecuteSequenceList(list(Rendezvous())). }),
   CreateOption("Dock with target", {
     ExecuteSequenceList(list(DockWithTarget())).
@@ -57,5 +57,4 @@ until false {
   // TODO: Large ships bouncing on the runway are tricking prelaunch
   if ship:status = "PRELAUNCH" or (altitude < 100)  { SequenceMenu(launch_options, 30). }
   else { SequenceMenu(orbit_options). }
-  
 }
