@@ -233,7 +233,7 @@ function LandAtKSC_SSTO {
       set desired_pitch to 0.
       set desired_throttle to 0.
       set desired_roll to 0.
-      lock steering to Heading(90, desired_pitch, desired_roll).
+      lock steering to Heading(90, desired_pitch).
       lock throttle to desired_throttle.
       set pid_pitch:setpoint to 6000. // altitude
       set pid_throttle:setpoint to 600. // airspeed
@@ -244,38 +244,42 @@ function LandAtKSC_SSTO {
       }
 
       Sequence(index, "Landing at KSC - Approaching runway...").
-      declare pid_roll is pidloop(100, 1, 10, -1, 1).
-      set pid_roll:setpoint to -0.0485998228908655. // KSC Runway 09 lat
       set pid_pitch to pidLoop(50, 0.1, 100, -10, 10).
       set pid_pitch:setpoint to 1000. // altitude
       set pid_throttle:setpoint to 250. // airspeed
       until (ksc:position - ship:position):mag < 20000 {
         set desired_throttle to pid_throttle:update(time:seconds, ship:airspeed).
         set desired_pitch to pid_pitch:update(time:seconds, altitude).
-        set desired_roll to pid_roll:update(time:seconds, ship:geoposition:lat).
         FlightStats_Landing().
       }
 
       Sequence(index, "Landing at KSC - Landing at runway...").
       set pid_pitch:setpoint to 400. // altitude
       set pid_throttle:setpoint to 150. // airspeed
-      until (ksc:position - ship:position):mag < 10000 {
+      declare pid_roll is pidloop(100, 1, 50, -1, 1).
+      set pid_roll:setpoint to -0.0485998228908655. // KSC Runway 09 lat
+      set rcs to true.
+      until (ksc:position - ship:position):mag < 5000 {
         set desired_throttle to pid_throttle:update(time:seconds, ship:airspeed).
         set desired_pitch to pid_pitch:update(time:seconds, altitude).
         set desired_roll to pid_roll:update(time:seconds, ship:geoposition:lat).
+        set ship:control:translation to v(-desired_roll, 0, 0). // TODO: Don't use RCS
         FlightStats_Landing().
       }
 
-      lock steering to Heading(90, 5).
+      lock steering to Heading(90, 3).
       set pid_throttle:setpoint to 75. // airspeed
       set gear to true.
 
       until status = "landed" {
+        set desired_roll to pid_roll:update(time:seconds, ship:geoposition:lat).
+        set ship:control:translation to v(-desired_roll, 0, 0). // TODO: Don't use RCS
         set desired_throttle to pid_throttle:update(time:seconds, ship:airspeed).
         FlightStats_Landing().
       }
 
-      set throttle to 0.
+      set rcs to false.
+      lock throttle to 0.
       set brakes to true.
 
       Sequence(index, "Landing at KSC - Successful landing at KSC!", SEQ["COMPLETE"]).

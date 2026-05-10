@@ -18,9 +18,9 @@ declare launch_options is list(
 ).
 
 declare orbit_options is list(
-  CreateOption("Kerbal Space Center",     { ESL(ReturnToKerbin_SSTO()). }), // TODO: Return home
+  CreateOption("Kerbal Space Center",     { ESL(ReturnToKerbin_SSTO()).           }), // TODO: Return home
   CreateOption("Rendezvous with target",  { ESL(list(Rendezvous("Kerbin Beta"))). }),
-  CreateOption("Dock with target",        { ESL(list(DockWithTarget())). }),
+  CreateOption("Dock with target",        { ESL(list(DockWithTarget())).          }),
   CreateOption("Kerbin Beta",             { ESL(list(Rendezvous("Kerbin Beta"))). }),
   CreateOption("Kerbin Beta - Resupply",  { ESL(list(Rendezvous("Kerbin Beta"))). }), // TODO: Resupply and return home
   CreateOption("Kerbin Beta - Tourism",   { ESL(list(Rendezvous("Kerbin Beta"))). }), // TODO: Wait 4 hours and return home
