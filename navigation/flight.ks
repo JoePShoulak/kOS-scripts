@@ -275,6 +275,9 @@ function LandAtKSC_SSTO {
         FlightStats_Landing().
       }
 
+      set throttle to 0.
+      set brakes to true.
+
       Sequence(index, "Landing at KSC - Successful landing at KSC!", SEQ["COMPLETE"]).
       unlock steering.
       unlock throttle.
