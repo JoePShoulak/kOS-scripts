@@ -98,6 +98,30 @@ function ApoapsisTime {
   return apoapsis_time.
 }
 
+function FitLine {
+  parameter x1, y1, x2, y2.
+
+  declare m is (y2-y1)/(x2-x1).
+
+  return { parameter x. return m * (x - x1) + y1. }.
+}
+
+function FitQuadratic {
+  parameter x1, y1, x2, y2, x3, y3. 
+
+    declare a is y1/((x1-x2)*(x1-x3)) + y2/((x2-x1)*(x2-x3)) + y3/((x3-x1)*(x3-x2)).
+
+    declare b is (-y1*(x2+x3)/((x1-x2)*(x1-x3))
+         -y2*(x1+x3)/((x2-x1)*(x2-x3))
+         -y3*(x1+x2)/((x3-x1)*(x3-x2))).
+
+    declare c is (y1*x2*x3/((x1-x2)*(x1-x3))
+        +y2*x1*x3/((x2-x1)*(x2-x3))
+        +y3*x1*x2/((x3-x1)*(x3-x2))).
+
+    return { parameter x. return a*x^2 + b*x + c. }.
+}
+
 function CalculatePhaseAngle {
   parameter object.
 

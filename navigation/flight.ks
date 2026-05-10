@@ -221,50 +221,77 @@ function ReenterAtmosphere_SSTO {
 
 function LandAtKSC_SSTO {
   parameter index.
-  declare ksc is Waypoint("KSC").
 
   return lexicon(
     "init", { Sequence(index, "Landing at KSC", SEQ["IDLE"]). },
     "exec", {
-      declare pid_throttle is pidLoop(2.5, 0.1, 5, 0, 1).
-      declare pid_pitch to pidLoop(50, 0.1, 80, -5, 5).
+      declare ksc is Waypoint("KSC").
 
-      Sequence(index, "Landing at KSC - Descending to safe altitude...").
+      declare pid_throttle is pidLoop(1, 0.1, 5, 0, 1).
+      declare pid_pitch to pidLoop(25, 0.1, 30, -1, 1).
+      declare pid_roll is pidloop(100, 0.1, 10, -1, 1).
+
       set desired_pitch to 0.
       set desired_throttle to 0.
       set desired_roll to 0.
+      
       lock steering to Heading(90, desired_pitch, desired_roll).
       lock throttle to desired_throttle.
-      set pid_pitch:setpoint to 6000. // altitude
-      set pid_throttle:setpoint to 600. // airspeed
-      until (ksc:position - ship:position):mag < 50000 {
-        set desired_throttle to pid_throttle:update(time:seconds, ship:airspeed).
-        set desired_pitch to pid_pitch:update(time:seconds, altitude).
-        FlightStats_Landing().
-      }
+      lock approach_distance to (ksc:position - ship:position):mag.
 
-      Sequence(index, "Landing at KSC - Approaching runway...").
-      declare pid_roll is pidloop(100, 1, 10, -1, 1).
+      // set pid_pitch:setpoint to 6000. // altitude
+      // set pid_throttle:setpoint to 600. // airspeed
+      // set pid_roll:setpoint to -0.0485998228908655. // KSC Runway 09 lat
+      lock steering to heading(90, 0).
+      lock throttle to 0.
+      wait until approach_distance < 50000.
+      declare altitude_function is FitQuadratic(approach_distance, altitude, 50000, 6000, 7500, 150).
+      // declare altitude_function is LineOfBestFit(50000, 6000, 7500, 400). // At 50km out, 6km up; at 7.5km out, 0.4km up
+      declare speed_function is FitLine(50000, 600, 7500, 150).     // At 50km out, 600m/s; at 7.5km out, 150m/s
+
+      lock altitude_profile to altitude_function(approach_distance).
+      lock speed_profile to min(speed_function(approach_distance), 650).
       set pid_roll:setpoint to -0.0485998228908655. // KSC Runway 09 lat
-      set pid_pitch to pidLoop(50, 0.1, 100, -10, 10).
-      set pid_pitch:setpoint to 1000. // altitude
-      set pid_throttle:setpoint to 250. // airspeed
-      until (ksc:position - ship:position):mag < 20000 {
+
+      until approach_distance < 7500 {
+        set pid_pitch:setpoint to altitude_profile.
+        set pid_throttle:setpoint to speed_profile.
         set desired_throttle to pid_throttle:update(time:seconds, ship:airspeed).
         set desired_pitch to pid_pitch:update(time:seconds, altitude).
         set desired_roll to pid_roll:update(time:seconds, ship:geoposition:lat).
         FlightStats_Landing().
       }
 
-      Sequence(index, "Landing at KSC - Landing at runway...").
-      set pid_pitch:setpoint to 400. // altitude
-      set pid_throttle:setpoint to 150. // airspeed
-      until (ksc:position - ship:position):mag < 10000 {
-        set desired_throttle to pid_throttle:update(time:seconds, ship:airspeed).
-        set desired_pitch to pid_pitch:update(time:seconds, altitude).
-        set desired_roll to pid_roll:update(time:seconds, ship:geoposition:lat).
-        FlightStats_Landing().
-      }
+      // // Dist: 50km, Alt:6km, speed: 600m/s 
+      // Sequence(index, "Landing at KSC - Descending to safe altitude...").
+      // until approach_distance < 50000 {
+      //   set desired_throttle to pid_throttle:update(time:seconds, ship:airspeed).
+      //   set desired_pitch to pid_pitch:update(time:seconds, altitude).
+      //   FlightStats_Landing().
+      // }
+
+      // // Dist: 20km, Alt:1km, speed: 250m/s 
+      // Sequence(index, "Landing at KSC - Approaching runway...").
+      // set pid_pitch to pidLoop(50, 0.1, 100, -10, 10).
+      // set pid_pitch:setpoint to 1000. // altitude
+      // set pid_throttle:setpoint to 250. // airspeed
+      // until approach_distance < 20000 {
+      //   set desired_throttle to pid_throttle:update(time:seconds, ship:airspeed).
+      //   set desired_pitch to pid_pitch:update(time:seconds, altitude).
+      //   set desired_roll to pid_roll:update(time:seconds, ship:geoposition:lat).
+      //   FlightStats_Landing().
+      // }
+
+      // // Dist: 7.5km, Alt:0.4km, speed: 150m/s 
+      // Sequence(index, "Landing at KSC - Landing at runway...").
+      // set pid_pitch:setpoint to 400. // altitude
+      // set pid_throttle:setpoint to 150. // airspeed
+      // until approach_distance < 7500 {
+      //   set desired_throttle to pid_throttle:update(time:seconds, ship:airspeed).
+      //   set desired_pitch to pid_pitch:update(time:seconds, altitude).
+      //   set desired_roll to pid_roll:update(time:seconds, ship:geoposition:lat).
+      //   FlightStats_Landing().
+      // }
 
       lock steering to Heading(90, 5).
       set pid_throttle:setpoint to 75. // airspeed
@@ -289,7 +316,7 @@ function ReturnToKerbin_SSTO {
   declare seqs is list().
   if port:haspartner { seqs:add(undock@). }
 
-  seqs:add(ReenterAtmosphere_SSTO@).
+  if altitude > 70000 { seqs:add(ReenterAtmosphere_SSTO@). }
   seqs:add(LandAtKSC_SSTO@).
 
   return seqs.
