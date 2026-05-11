@@ -12,7 +12,7 @@ function Takeoff {
     "init", { Sequence(index, "Takeoff", SEQ["IDLE"]). },
     "exec", {
       parameter pitch is 10.
-      parameter safe_alt is 1000.
+      parameter safe_alt is 2000.
       parameter hdg is 90.
 
       lock throttle to 1.0.
@@ -29,19 +29,18 @@ function Takeoff {
       UNTIL ship:groundspeed > 100 { FlightStats_SSTO(). }
 
       Sequence(index, "Takeoff - Pitching for takeoff...").
-      LOCK STEERING to HEADING(hdg, pitch).
-      UNTIL altitude > 75 or verticalSpeed > 1 { FlightStats_SSTO(). }
+      LOCK STEERING to HEADING(hdg, 15).
+      UNTIL ship:status = "FLYING" { FlightStats_SSTO(). }
 
       Sequence(index, "Takeoff - Airborne! Raising gear...").
       SET gear to false.
       set init_time to timestamp().
-      until timestamp() - init_time > 3 { FlightStats_SSTO(). }
+      until altitude > 150 { FlightStats_SSTO(). }
 
       Sequence(index, "Takeoff - Ascending to " + safe_alt + "m...").
-      set warpmode to "PHYSICS".
       set warp to 3.
+      LOCK STEERING to HEADING(hdg, PITCH).
       until altitude > safe_alt { FlightStats_SSTO(). }
-      set warp to 0.
 
       Sequence(index, "Takeoff - Safe altitude reached!", SEQ["COMPLETE"]).
     }
@@ -83,9 +82,23 @@ function PitchToOrbit {
 
       // Pitch up until we run out of thrust
       Sequence(index, "Reach Orbit - Pitching up for altitude...").
-      set warp to 1.
+      // set warp to 1.
+
+      declare pid_pitch is pidloop(1, 0.1, 1, 0, 15).
+      set input_pitch to 2.
+      lock steering to heading(90, input_pitch).
+      until input_pitch = 15 {
+        set input_pitch to pid_pitch:update(time:seconds, input_pitch).
+        FlightStats_SSTO().
+      }
+
+
       lock steering to heading(hdg, 15).
-      until ship:thrust < 100 { FlightStats_SSTO(). }
+      declare old_speed is 0.
+      until ship:thrust < 500 and ship:airspeed < old_speed { 
+        wait 0.1.
+        set old_speed to ship:airspeed.
+        FlightStats_SSTO(). }
 
       // Toggle out engines to closed cycle mode
       Sequence(index, "Reach Orbit - Switching engines to Closed Cycle mode...").

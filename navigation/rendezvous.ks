@@ -141,7 +141,7 @@ function PrepareForDocking {
     "exec", {
       // Set control point to do0cking port (and deploy if needed)
       Sequence(index, "Prepare for Docking - Setting control point...").
-      DrawDockingVectors().
+      // DrawDockingVectors(). // DEBUG
       set target to (choose target if target:istype("Vessel") else target:ship).
 
       declare port is ship:dockingports[0].
@@ -149,7 +149,6 @@ function PrepareForDocking {
       declare deploy_event is "deploy docking port". 
 
       set rcs to false.
-      lock steering to lookDirUp(target:facing:forevector, (ship:position - target:position)).
 
       set init_time to timestamp().
       if animator:HasEvent(deploy_event) { animator:DoEvent(deploy_event). }
@@ -185,8 +184,8 @@ function PrepareForDocking {
         }
       }
 
-      set up_dir to target:facing:forevector.
       set target to station_port.
+      set up_dir to target:facing:forevector.
       lock steering to lookDirUp(target:position - port:position, -up_dir).
 
       until not ship:messages:empty { wait 0.01. }.
@@ -266,7 +265,7 @@ function DockingInsertion {
 
       lock rvel to ship:velocity:orbit - target:ship:velocity:orbit.
       // lock steering to lookDirUp(target:position - port:position, -up_dir).
-      declare dir is lookDirUp(target:ship:facing:forevector, (ship:position - target:position)).
+      lock dir to lookDirUp(target:ship:facing:forevector, (ship:position - target:position)).
       lock steering to dir.
       // TODO: Turn this into a function
       wait until vang(ship:facing:forevector, target:ship:facing:forevector) < 1 and ship:angularvel:mag < 0.1.
@@ -276,9 +275,8 @@ function DockingInsertion {
       lock rvel_local to rvel * RAWtoSHIP. 
       
       set pid_x to pidloop(10, 0.1, 60, -1, 1).
+      set pid_y to pidloop(35, 0.1, 10, -1, 1).
       set pid_z to pidloop(35, 0.1, 150, -1, 1).
-      //
-      set pid_y to pidloop(35, 0.1, 60, -1, 1).
 
       set rcs to true.
 
@@ -286,7 +284,10 @@ function DockingInsertion {
       and rvel_local:x < 0.1 and rvel_local:z < 0.1 {
         set desired_x to pid_x:update(time:seconds, target_vec_local:x).
         set desired_z to pid_z:update(time:seconds, target_vec_local:z).
-        set ship:control:translation to v(desired_x, 0, desired_z).
+        set ship:control:translation to v(
+          desired_x,
+          0,
+          desired_z).
       }
 
       wait 1.
@@ -299,11 +300,19 @@ function DockingInsertion {
 
       until rvel:mag > 2 { set ship:control:translation to v(0,-1,0). }
 
+      set pid_x to pidloop(5, 0.1, 60, -1, 1).
+      set pid_y to pidloop(5, 0.1, 10, -1, 1).
+      set pid_z to pidloop(5, 0.1, 150, -1, 1).
+
       until port:haspartner { 
         set desired_x to pid_x:update(time:seconds, target_vec_local:x).
         set desired_y to pid_y:update(time:seconds, rvel_local:y).
         set desired_z to pid_z:update(time:seconds, target_vec_local:z).
-        set ship:control:translation to v(desired_x, desired_y, desired_z).
+        set ship:control:translation to v(
+          choose desired_x if abs(desired_x) > 0.05 else 0,
+          choose desired_y if abs(desired_y) > 0.05 else 0,
+          choose desired_z if abs(desired_z) > 0.05 else 0
+        ).
       }
 
       Sequence(index, "Docking Insertion - Docking Complete!", SEQ["COMPLETE"]).

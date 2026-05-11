@@ -142,8 +142,9 @@ function Handle_Docking {
     lock ship_vec TO tgt:dockingports[0]:POSITION - PORT:POSITION.
     lock targetRadial TO (ship_vec - norm_vec * VDOT(ship_vec, norm_vec)):NORMALIZED.
 
-    // TODO: Fix this
-    LOCK STEERING TO LOOKDIRUP(ship:facing:forevector, RotateVector(targetRadial, norm_vec, 90)).
+    // TODO: Fix this, it is assuming things about the statino geometry instead of determining them from code
+    lock aim_vector to RotateVector(targetRadial, norm_vec, -45).
+    LOCK STEERING TO LOOKDIRUP(ship:facing:forevector, aim_vector).
 
     // Wait for TODO: add failure options
     wait 5.
@@ -161,11 +162,12 @@ function Handle_Docking {
 }
 
 Handle_Docking().
-lock steering to vCrs(ship:prograde:vector, ship:position - kerbin:position).
+// lock steering to vCrs(ship:prograde:vector, ship:position - kerbin:position).
 
 // main
 until false {
   InitTerminal("Welcome to " + ship:name + "! Your home away from home.").
-
+  IdleScreen().
+  InitTerminal("Welcome to " + ship:name + "! Your home away from home.").
   SequenceMenu(options).
 }

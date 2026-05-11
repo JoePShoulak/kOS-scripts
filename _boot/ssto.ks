@@ -13,7 +13,7 @@ declare launch_options is list(
   CreateOption("LKO - Tourism",           { ESL(list(SSTOToOrbit())). }), // TODO: Wait an hour and return
   CreateOption("Kerbin Beta",             { ESL(list(SSTOToOrbit(), Rendezvous("Kerbin Beta"), DockWithTarget())). }),
   CreateOption("Kerbin Beta - Resupply",  { ESL(list(SSTOToOrbit(), Rendezvous("Kerbin Beta"), DockWithTarget())). }), // TODO: Resupply and return home
-  CreateOption("Kerbin Beta - Tourism",   { ESL(list(SSTOToOrbit(), Rendezvous("Kerbin Beta"), DockWithTarget())). }), // TODO: Wait 4 hours and return home
+  CreateOption("Kerbin Beta - Tourism",   { ESL(list(SSTOToOrbit(), Rendezvous("Kerbin Beta"), DockWithTarget())). wait 5. warpTo(time:seconds + 4.01 * 60 * 60). ESL(ReturnToKerbin_SSTO()). }), // TODO: Wait 4 hours and return home
   CreateOption("Exit",                      IdleScreen@ ) 
 ).
 
@@ -38,8 +38,12 @@ when altitude > 1000 then { // TODO: Remove this later. It's for in case we orbi
 
 until false {
   InitTerminal("Welcome to the " + ship:name + " kOS autpilot!").
-
+  
   // TODO: Large ships bouncing on the runway are tricking prelaunch
   if ship:status = "PRELAUNCH" or (altitude < 100)  { SequenceMenu(launch_options, 30). }
-  else { SequenceMenu(orbit_options). }
+  else {
+    IdleScreen().
+    InitTerminal("Welcome to the " + ship:name + " kOS autpilot!").
+    SequenceMenu(orbit_options).
+    }
 }

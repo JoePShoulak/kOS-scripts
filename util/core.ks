@@ -174,7 +174,9 @@ function IdleScreen {
   clearScreen.
 
   // TODO: Find more/better art
-  DrawAsciiArt(GetAsciiArtIterator("rocket_prelaunch")).
+  if ship:type = "STATION" { DrawAsciiArt(GetAsciiArtIterator("station")). }
+  else if ship:status = "PRELAUNCH" { DrawAsciiArt(GetAsciiArtIterator("rocket_prelaunch")). }
+  else { DrawAsciiArt(GetAsciiArtIterator("rocket")). }
 
   PRINT "Press any button to continue":padright(100) at(0,0).
   until terminal:input:haschar() { {IdleStats(). delegate(). } }
