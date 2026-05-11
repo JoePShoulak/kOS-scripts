@@ -8,22 +8,39 @@ runOncePath("0:/navigation/rendezvous.ks").
 
 declare ESL is ExecuteSequenceList@.
 
+function WaitForHours {
+  parameter hours.
+
+  return {
+    parameter index.
+
+    return lexicon(
+      "init", { Sequence(index, "Wait for contract requirment", SEQ["IDLE"]). },
+      "exec", {
+        Sequence(index, "Wait for contract requirment - Waiting for " + hours + " hours...").
+        wait 5. warpTo(time:seconds + hours * 60 * 60).
+        Sequence(index, "Wait for contract requirment - Waiting complete!", SEQ["COMPLETE"]).
+      }
+    ).
+  }.
+}
+
 declare launch_options is list(
   CreateOption("LKO",                     { ESL(list(SSTOToOrbit())). }),
-  CreateOption("LKO - Tourism",           { ESL(list(SSTOToOrbit())). }), // TODO: Wait an hour and return
+  CreateOption("LKO - Tourism",           { ESL(list(SSTOToOrbit(), WaitForHours(1), ReturnToKerbin_SSTO())). }),
   CreateOption("Kerbin Beta",             { ESL(list(SSTOToOrbit(), Rendezvous("Kerbin Beta"), DockWithTarget())). }),
   CreateOption("Kerbin Beta - Resupply",  { ESL(list(SSTOToOrbit(), Rendezvous("Kerbin Beta"), DockWithTarget())). }), // TODO: Resupply and return home
-  CreateOption("Kerbin Beta - Tourism",   { ESL(list(SSTOToOrbit(), Rendezvous("Kerbin Beta"), DockWithTarget())). wait 5. warpTo(time:seconds + 4.01 * 60 * 60). ESL(ReturnToKerbin_SSTO()). }), // TODO: Wait 4 hours and return home
+  CreateOption("Kerbin Beta - Tourism",   { ESL(list(SSTOToOrbit(), Rendezvous("Kerbin Beta"), DockWithTarget(), WaitForHours(5), ReturnToKerbin_SSTO())). }),
   CreateOption("Exit",                      IdleScreen@ ) 
 ).
 
 declare orbit_options is list(
-  CreateOption("Kerbal Space Center",     { ESL(ReturnToKerbin_SSTO()).           }), // TODO: Return home
+  CreateOption("Kerbal Space Center",     { ESL(ReturnToKerbin_SSTO()).           }),
   CreateOption("Rendezvous with target",  { ESL(list(Rendezvous("Kerbin Beta"))). }),
   CreateOption("Dock with target",        { ESL(list(DockWithTarget())).          }),
   CreateOption("Kerbin Beta",             { ESL(list(Rendezvous("Kerbin Beta"))). }),
-  CreateOption("Kerbin Beta - Resupply",  { ESL(list(Rendezvous("Kerbin Beta"))). }), // TODO: Resupply and return home
-  CreateOption("Kerbin Beta - Tourism",   { ESL(list(Rendezvous("Kerbin Beta"))). }), // TODO: Wait 4 hours and return home
+  CreateOption("Kerbin Beta - Resupply",  { ESL(list(Rendezvous("Kerbin Beta"), DockWithTarget())). }), // TODO: Resupply and return home
+  CreateOption("Kerbin Beta - Tourism",   { ESL(list(Rendezvous("Kerbin Beta"), DockWithTarget(), WaitForHours(5), ReturnToKerbin_SSTO())). }), 
   CreateOption("Exit",                      IdleScreen@ ) 
 ).
 

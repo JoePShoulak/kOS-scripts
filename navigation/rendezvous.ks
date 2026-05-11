@@ -20,8 +20,9 @@ function MatchVelocity {
 
   lock steering to -rvel.
   wait until vang(ship:facing:forevector, -rvel) < 2.
+  wait 1.
 
-  if not zero and inital_rvel:mag > 20{
+  if not zero and inital_rvel:mag > 20 {
     lock throttle to 1.0.
     until rvel:mag < inital_rvel:mag / 5
     or rvel:mag > old_velocity {

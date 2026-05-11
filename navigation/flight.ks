@@ -84,14 +84,13 @@ function PitchToOrbit {
       Sequence(index, "Reach Orbit - Pitching up for altitude...").
       // set warp to 1.
 
-      declare pid_pitch is pidloop(1, 0.1, 1, 0, 15).
+      declare pid_pitch is pidloop(0.1, 0.001, 1, 0, 15).
       set input_pitch to 2.
       lock steering to heading(90, input_pitch).
       until input_pitch = 15 {
         set input_pitch to pid_pitch:update(time:seconds, input_pitch).
         FlightStats_SSTO().
       }
-
 
       lock steering to heading(hdg, 15).
       declare old_speed is 0.
@@ -196,7 +195,7 @@ function ReenterAtmosphere_SSTO {
       }
 
       // TODO: Improve this warping
-      declare tpa is 200. // target phase angle
+      declare tpa is 180. // target phase angle
       set warp to 5.
       until phase_angle > tpa - 90 and phase_angle < tpa and InSunlight(ksc) { FlightStats_Landing(). }.
       set warp to 3.
@@ -208,7 +207,7 @@ function ReenterAtmosphere_SSTO {
       lock steering to retrograde.
       until vang(ship:facing:forevector, retrograde:forevector) < 2 and ship:angularvel:mag < 0.1 { FlightStats_Landing(). }.
       lock throttle to 1.
-      until periapsis < 30000 { FlightStats_Landing(). }.
+      until periapsis < 20 { FlightStats_Landing(). }.
       lock throttle to 0.
       wait 1.
 
