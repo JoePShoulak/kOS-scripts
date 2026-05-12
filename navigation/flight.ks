@@ -195,63 +195,79 @@ function ReenterAtmosphere_SSTO {
       }
 
       // TODO: Improve this warping
-      declare tpa is 180. // target phase angle
-      set warp to 5.
-      until phase_angle > tpa - 90 and phase_angle < tpa and InSunlight(ksc) { FlightStats_Landing(). }.
-      set warp to 3.
-      until phase_angle > tpa - 10 and phase_angle < tpa and InSunlight(ksc) { FlightStats_Landing(). }.
-      set warp to 1.
-      until phase_angle > tpa and phase_angle < tpa + 1 { FlightStats_Landing(). }.
-      set warp to 0.
-      Sequence(index, "Returning to Kerbin - Lowering PE to within atmosphere...").
-      lock steering to retrograde.
-      until vang(ship:facing:forevector, retrograde:forevector) < 2 and ship:angularvel:mag < 0.1 { FlightStats_Landing(). }.
-      lock throttle to 1.
-      until periapsis < 20 { FlightStats_Landing(). }.
-      lock throttle to 0.
-      wait 1.
+      declare tpa is 215. // target phase angle
+      if phase_angle < tpa or phase_angle < tpa + 1 {
+        Sequence(index, "Returning to Kerbin - Waiting for KSC approach phase angle...").
+        wait 5.
+        until phase_angle > tpa - 10 and phase_angle < tpa and InSunlight(ksc) { set warp to 3. FlightStats_Landing(). }.
+        until phase_angle > tpa and phase_angle < tpa + 1 { set warp to 1. FlightStats_Landing(). }.
+        set warp to 0.
+      }
 
-      Sequence(index, "Returning to Kerbin - Descending with high AoA...").
-      set warp to 3.
-      when altitude < 70000 then {
-        set warpmode to "PHYSICS".
-        set warp to 3.
-        LIST ENGINES IN my_engines.
-        for eng in my_engines { eng:togglemode(). }
+      if periapsis >= 70000 {
+        Sequence(index, "Returning to Kerbin - Lowering PE to within atmosphere...").
+        lock steering to retrograde.
+        until vang(ship:facing:forevector, retrograde:forevector) < 2 and ship:angularvel:mag < 0.1 { FlightStats_Landing(). }.
+        lock throttle to 1.
+        until periapsis < 20 { FlightStats_Landing(). }.
+        lock throttle to 0.
+        wait 1.
       }
 
       lock steering to heading(90, 20). 
-      when altitude < 50000 then { set warp to 0. }
-      until ship:velocity:surface:mag < 2000 { FlightStats_Landing(). } // TODO: Should be surface speed?
 
-      Sequence(index, "Returning to Kerbin - Coasting with low AoA...").
-      until ship:airspeed < 700 or altitude < 10000 { lock steering to heading(90, 5). FlightStats_Landing(). }
-      Sequence(index, "Returning to Kerbin - Successful return to Kerbin!", SEQ["COMPLETE"]).
+      if altitude > 70000 {
+        Sequence(index, "Returning to Kerbin - Descending with high AoA...").
+        set warp to 3.
+        when altitude < 70000 then {
+          set warpmode to "PHYSICS".
+          set warp to 3.
+          LIST ENGINES IN my_engines.
+          for eng in my_engines { eng:togglemode(). }
+        }
+      }
+
+      if altitude > 50000 {
+        when altitude < 50000 then { set warp to 0. }
+        until ship:velocity:surface:mag < 2000 { FlightStats_Landing(). }
+      }
+
+      if ship:airspeed > 700 and altitude > 10000 {
+        Sequence(index, "Returning to Kerbin - Coasting with low AoA...").
+        lock steering to heading(90, 5).
+        until ship:airspeed < 700 or altitude < 10000 { FlightStats_Landing(). }
+        Sequence(index, "Returning to Kerbin - Successful return to Kerbin!", SEQ["COMPLETE"]).
+      }
     }
   ).
 }
 
 function LandAtKSC_SSTO {
   parameter index.
-  declare ksc is Waypoint("KSC").
-
   return lexicon(
     "init", { Sequence(index, "Landing at KSC", SEQ["IDLE"]). },
     "exec", {
-      declare pid_throttle is pidLoop(2.5, 0.1, 5, 0, 1).
-      declare pid_pitch to pidLoop(50, 0.1, 80, -5, 5).
+      declare pid_throttle is pidLoop(0.5, 0.02, 0.1, 0, 1).
+      declare pid_pitch to pidLoop(2, 8, 50, -5, 5).
+      declare ksc is Waypoint("KSC").
+      declare hdg is 90.
+      declare KSC_lat is -0.0485998228908655.
 
       Sequence(index, "Landing at KSC - Descending to safe altitude...").
       set desired_pitch to 0.
       set desired_throttle to 0.
       set desired_roll to 0.
-      lock steering to Heading(90, desired_pitch).
+      lock steering to Heading(hdg, desired_pitch).
       lock throttle to desired_throttle.
       set pid_pitch:setpoint to 6000. // altitude
       set pid_throttle:setpoint to 600. // airspeed
+      if altitude > 6500 { when altitude < 6500 then pid_pitch:reset(). }
       until (ksc:position - ship:position):mag < 50000 {
         set desired_throttle to pid_throttle:update(time:seconds, ship:airspeed).
         set desired_pitch to pid_pitch:update(time:seconds, altitude).
+        if ship:geoposition:lat - KSC_lat > 0.01 { set hdg to 91. }
+        else if ship:geoposition:lat - KSC_lat < -0.01 { set hdg to 89. }
+        else { set hdg to 90. }
         FlightStats_Landing().
       }
 
@@ -259,17 +275,20 @@ function LandAtKSC_SSTO {
       set pid_pitch to pidLoop(50, 0.1, 100, -10, 10).
       set pid_pitch:setpoint to 1000. // altitude
       set pid_throttle:setpoint to 250. // airspeed
-      until (ksc:position - ship:position):mag < 20000 {
+      until (ksc:position - ship:position):mag < 15000 {
         set desired_throttle to pid_throttle:update(time:seconds, ship:airspeed).
         set desired_pitch to pid_pitch:update(time:seconds, altitude).
+        if ship:geoposition:lat - KSC_lat > 0.01 { set hdg to 91. }
+        else if ship:geoposition:lat - KSC_lat < -0.01 { set hdg to 89. }
+        else { set hdg to 90. }
         FlightStats_Landing().
       }
 
       Sequence(index, "Landing at KSC - Landing at runway...").
       set pid_pitch:setpoint to 400. // altitude
       set pid_throttle:setpoint to 150. // airspeed
-      declare pid_roll is pidloop(100, 1, 50, -1, 1).
-      set pid_roll:setpoint to -0.0485998228908655. // KSC Runway 09 lat
+      declare pid_roll is pidloop(1, 0.1, 0.5, -1, 1).
+      set pid_roll:setpoint to KSC_lat. // KSC Runway 09 lat
       set rcs to true.
       until (ksc:position - ship:position):mag < 5000 {
         set desired_throttle to pid_throttle:update(time:seconds, ship:airspeed).

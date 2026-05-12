@@ -51,7 +51,8 @@ declare s_dv_prograde  is CreateStat("dV - Prograde", { return round(nextnode:pr
 declare s_dv_radial    is CreateStat("dV - Radial",   { return round(nextnode:radialout,  2) + "m/s".      } ).
 declare s_dv_normal    is CreateStat("dV - Normal",   { return round(nextnode:normal,     2) + "m/s".      } ).
 declare s_phase_angle  is CreateStat("Phase",         { return round(CalculatePhaseAngle(ksc), 2).         } ).
-declare s_lat_delta    is CreateStat("Lat delta",     { return ksc:geoposition:lat - ship:geoposition:lat. } ).
+declare s_lat_delta    is CreateStat("Lat delta",     { return round(ksc:geoposition:lat - ship:geoposition:lat, 5). } ).
+declare s_ksc_dist     is CreateStat("KSC Dist",      { return round((ksc:position - ship:position):mag, 5). } ).
 
 // Misc
 declare s_enginemode   is CreateStat("Engines",       { return ship:engines[0]:mode.                       } ).
@@ -105,7 +106,7 @@ function FlightStats_SSTO {
 
 function FlightStats_Landing {
   return DrawStatPanel(
-    s_air_speed,  s_altitude, s_apoapsis,  s_lat_delta,
+    s_air_speed,  s_altitude, s_ksc_dist,  s_lat_delta,
     s_v_speed,    s_q,        s_periapsis, s_phase_angle
   ).
 }

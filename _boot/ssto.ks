@@ -18,8 +18,11 @@ function WaitForHours {
       "init", { Sequence(index, "Wait for contract requirment", SEQ["IDLE"]). },
       "exec", {
         Sequence(index, "Wait for contract requirment - Waiting for " + hours + " hours...").
+        set warp to 0.
+        set warpmode to "rails".
         wait 5. warpTo(time:seconds + hours * 60 * 60).
         Sequence(index, "Wait for contract requirment - Waiting complete!", SEQ["COMPLETE"]).
+        wait until warp = 0.
       }
     ).
   }.
