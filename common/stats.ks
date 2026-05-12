@@ -1,5 +1,7 @@
 // stats.ks
 
+// TODO: Double check there's nothing else to review / improve here
+
 function CreateStat {
   parameter label, delegate.
 
@@ -52,7 +54,8 @@ declare s_dv_radial    is CreateStat("dV - Radial",   { return round(nextnode:ra
 declare s_dv_normal    is CreateStat("dV - Normal",   { return round(nextnode:normal,     2) + "m/s".      } ).
 declare s_phase_angle  is CreateStat("Phase",         { return round(CalculatePhaseAngle(ksc), 2).         } ).
 declare s_lat_delta    is CreateStat("Lat delta",     { return round(ksc:geoposition:lat - ship:geoposition:lat, 5). } ).
-declare s_ksc_dist     is CreateStat("KSC Dist",      { return round((ksc:position - ship:position):mag, 5). } ).
+declare s_ksc_dist     is CreateStat("KSC Dist",      { return round((ksc:position - ship:position):mag/1000, 2) + "km". } ).
+declare s_ksc_eta      is CreateStat("KSC ETA",       { return timestamp((ksc:position - ship:position):mag/airspeed). } ).
 
 // Misc
 declare s_enginemode   is CreateStat("Engines",       { return ship:engines[0]:mode.                       } ).
@@ -106,8 +109,8 @@ function FlightStats_SSTO {
 
 function FlightStats_Landing {
   return DrawStatPanel(
-    s_air_speed,  s_altitude, s_ksc_dist,  s_lat_delta,
-    s_v_speed,    s_q,        s_periapsis, s_phase_angle
+    s_air_speed,  s_altitude, s_ksc_dist, s_lat_delta,
+    s_v_speed,    s_q,        s_ksc_eta,  s_phase_angle
   ).
 }
 

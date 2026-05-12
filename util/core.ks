@@ -2,6 +2,9 @@
 
 runOncePath("0:/common/stats.ks").
 
+// TODO: Double check there's nothing else to review / improve here
+// TODO: Clean up and organize ALL of this
+
 /////////////
 // UTILITY //
 /////////////
@@ -18,12 +21,31 @@ function InitTerminal {
   if greeting:length { print greeting. }
 }
 
+function WaitForHours {
+  parameter hours.
+
+  return {
+    parameter index.
+
+    return lexicon(
+      "init", { Sequence(index, "Wait for contract requirment", SEQ["IDLE"]). },
+      "exec", {
+        Sequence(index, "Wait for contract requirment - Waiting for " + hours + " hours...").
+        set warp to 0.
+        set warpmode to "rails".
+        wait 5. warpTo(time:seconds + hours * 60 * 60).
+        wait until warp = 0.
+        Sequence(index, "Wait for contract requirment - Waiting complete!", SEQ["COMPLETE"]).
+      }
+    ).
+  }.
+}
+
 function ClearLine {
   parameter line.
 
   PRINT " ":padright(terminal:width) AT (0,line).
 }
-
 
 function TransferResourceByTag {
   parameter res, from_tag, to_tag.
@@ -96,6 +118,46 @@ function ApoapsisTime {
   ).
 
   return apoapsis_time.
+}
+
+function InSunlight {
+  parameter object.
+
+  SET sun_pos TO BODY("SUN"):POSITION.
+  SET obj_pos TO object:POSITION.
+  SET body_center TO BODY("KERBIN"):POSITION. // Or use SHIP:BODY:POSITION
+
+  SET v_obj_to_sun TO sun_pos - obj_pos.
+  SET v_obj_to_body TO body_center - obj_pos.
+
+  return vang(v_obj_to_sun, -v_obj_to_body) < 90.
+}
+
+function FlattenList {
+  parameter bulky_list.
+
+  declare new_list is list().
+
+  for li in bulky_list {
+    if li:typename = "list" {
+      until li:length = 0{
+        new_list:add(li[0]).
+        li:remove(0).
+      }
+    } else {
+      new_list:add(li).
+    }
+  }
+
+  return new_list.
+}
+
+function PitchFor {
+  parameter ves is ship.
+
+  local pointing is ves:facing:forevector.
+
+  return 90 - vang(ves:up:vector, pointing).
 }
 
 function FitLine {

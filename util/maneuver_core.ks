@@ -1,5 +1,7 @@
 // maneuver_core.ks
 
+// TODO: Double check there's nothing else to review / improve here
+
 runOncePath("0:/common/stats.ks").
 runOncePath("0:/util/core.ks").
 
@@ -110,6 +112,7 @@ function ExecuteManeuver {
   if startTime - time:seconds > 600 { warpTo(startTime - 600).  }
   lock steering to mnv:burnvector.
   wait until vang(ship:facing:forevector, mnv:burnvector) < 2.
+  set warpmode to "rails".
   warpTo(startTime - 10).
   until time:seconds > startTime { ManeuverStats(). }
   lock throttle to 1.

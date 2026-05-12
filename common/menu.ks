@@ -1,5 +1,7 @@
 // menu.ks
 
+// TODO: Double check there's nothing else to review / improve here
+
 runOncePath("0:/util/core.ks").
 
 function CreateOption {

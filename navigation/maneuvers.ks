@@ -1,5 +1,7 @@
 // maneuvers.ks
 
+// TODO: Double check there's nothing else to review / improve here
+
 runOncePath("0:/util/maneuver_core.ks").
 
 function ProtectFromPast {
@@ -68,11 +70,8 @@ function CreateRefineInterceptScore {
   return RefineInterceptScore@.
 }
 
-function CircularizeAtApoapsis {
-  declare data is list(0).
-  set data to ImproveParameters(data, EccentricityScore_Apoapsis@).
-  ExecuteManeuver(node(time:seconds + ship:orbit:eta:apoapsis, 0, 0, data[0])).
-}
+function CircularizeAtApoapsis { ChangePEAtAP(apoapsis). }
+function CircularizeAtPreiapsis { ChangeAPAtPE(periapsis). }
 
 function CalcDVForNewSMA {
   parameter new_SMA.
@@ -86,7 +85,7 @@ function CalcDVForNewSMA {
 function ChangeAPAtPE {
   parameter new_alt.
 
-  declare new_SMA is body:radius + (new_alt + periapsis)/2.
+  declare new_SMA is body:radius + (new_alt + periapsis) / 2.
 
   ExecuteManeuver(node(time:seconds + orbit:eta:periapsis, 0, 0, CalcDVForNewSMA(new_SMA))).
 }
@@ -94,7 +93,7 @@ function ChangeAPAtPE {
 function ChangePEAtAP {
   parameter new_alt.
 
-  declare new_SMA is body:radius + (new_alt + apoapsis)/2.
+  declare new_SMA is body:radius + (new_alt + apoapsis) / 2.
 
   ExecuteManeuver(node(time:seconds + orbit:eta:apoapsis, 0, 0, CalcDVForNewSMA(new_SMA))).
 }
@@ -131,9 +130,6 @@ function CalcHohmannInterceptTime {
 }
 
 function HohmannTransferToTarget {
-  parameter tgt is target.
-  set target to tgt.
-
   // TODO: Plane transfer before the transfer
 
   declare SMA is CalcHohmannInterceptSMA().

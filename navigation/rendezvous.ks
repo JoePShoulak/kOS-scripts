@@ -1,5 +1,7 @@
 // rendezvous.ks
 
+// TODO: Double check there's nothing else to review / improve here
+
 runOncePath("0:/navigation/maneuvers.ks").
 runOncePath("0:/util/core.ks").
 runOncePath("0:/common/sequence.ks").
@@ -326,8 +328,13 @@ function DockingInsertion {
 }
 
 function DockWithTarget {
+  parameter tgt is target.
+  set target to tgt.
+
   declare seq_list is list().
   ship:messages:clear(). // TODO: move this
+
+  if (ship:position - target:position):mag > 150 { seq_list:add(Rendezvous@). }
 
   seq_list:add(PrepareForDocking@).
   seq_list:add(DockingInsertion@).

@@ -1,5 +1,7 @@
 // boot: station.ks
 
+// TODO: Double check there's nothing else to review / improve here
+
 runOncePath("0:/util/core.ks").
 runOncePath("0:/common/menu.ks").
 runOncePath("0:/navigation/maneuvers.ks").
@@ -9,8 +11,8 @@ runOncePath("0:/common/sequence.ks").
 declare options is list(
   // TODO: Add titles for these?
   CreateOption("Tag current parts", { for part in ship:parts { set part:tag to "station". } }),
-  CreateOption("Transfer resources in", { ExecuteSequenceList(TransferAllResourcesByTag("", "station")). }),
-  CreateOption("Transfer resources out", { ExecuteSequenceList(TransferAllResourcesByTag("station", "")). }),
+  CreateOption("Transfer resources in", { Mission(TransferAllResourcesByTag("", "station")). }),
+  CreateOption("Transfer resources out", { Mission(TransferAllResourcesByTag("station", "")). }),
   CreateOption("Correct orbit", {
     declare estimate_inrecement is 10000.
     declare target_alt is round(ship:orbit:semimajoraxis/estimate_inrecement)*estimate_inrecement.
