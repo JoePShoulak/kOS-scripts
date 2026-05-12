@@ -2,73 +2,12 @@
 
 // TODO: Double check there's nothing else to review / improve here
 
-runOncePath("0:/util/maneuver_core.ks").
+runOncePath("0:/util/maneuver.ks").
 
-function ProtectFromPast {
-  parameter OriginalFunction.
-
-  function ReplacementFunction {
-    parameter data.
-
-    if data[0] < time:seconds + 30 {
-      return 2^64.
-    } else {
-      return OriginalFunction(data).
-    }
-  }
-  
-  return ReplacementFunction@.
-}
-
-function EccentricityScore_Apoapsis {
-  parameter data.
-
-  local mnv is node(time:seconds + ship:orbit:eta:apoapsis, 0, 0, data[0]).
-  add mnv.
-  local score is mnv:orbit:eccentricity.
-  ManeuverStats().
-  remove mnv.
-
-  return score.
-}
-
-
-function InterceptScore {
-  parameter data.
-
-  local mnv is node(data[0], data[1], data[2], data[3]).
-  add mnv.
-
-  declare apoapsis_time is ApoapsisTime(mnv).
-
-  local apoapsis_diff is 5 * abs((target:orbit:periapsis + 1000 - mnv:orbit:apoapsis)).
-  local distance_at_apo is (positionAt(ship, apoapsis_time) - positionAt(target, apoapsis_time)):mag.
-  local score is apoapsis_diff + distance_at_apo.
-  ManeuverStats().
-  remove mnv.
-
-  return score.
-}
-
-function CreateRefineInterceptScore {
-  parameter full_data. 
-
-  function RefineInterceptScore {
-    parameter data.
-    local mnv is node(data[0], full_data[1], full_data[2], full_data[3]).
-    add mnv.
-
-    declare apoapsis_time is ApoapsisTime(mnv).
-
-    local score is (positionAt(ship, apoapsis_time) - positionAt(target, apoapsis_time)):mag.
-    ManeuverStats().
-    remove mnv.
-    
-    return score.
-  }
-
-  return RefineInterceptScore@.
-}
+// TODO: Redo improvement scores to be able to do a hill climbing algorithm 
+// to find the closest approach to target (both on the current orbit and maneuver orbits)
+// to be able to both display the distance to target in rendezvous stats, as wellas refine
+// hohmann intercept maneuvers before performing the burns
 
 function CircularizeAtApoapsis { ChangePEAtAP(apoapsis). }
 function CircularizeAtPreiapsis { ChangeAPAtPE(periapsis). }

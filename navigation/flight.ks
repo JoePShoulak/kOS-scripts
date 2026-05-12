@@ -197,7 +197,7 @@ function SetupReturnTrajectory_SSTO {
         until periapsis < 20 { FlightStats_Landing(). }.
         lock throttle to 0.
         wait 1.
-        Sequence(index, "Setting up Kerbin Return - Trajectory acquired!", SEQ["COMPLETED"]).
+        Sequence(index, "Setting up Kerbin Return - Trajectory acquired!", SEQ["COMPLETE"]).
       }
     }
   ).
@@ -279,6 +279,10 @@ function LandAtKSC {
       }
 
       // We set our airspeed to 75 on PID, our pitch to 3 degrees, put down our gear, and hope
+      // TODO: Consider doing a second lerped pid from the safe point (6km) to runway start (1-2km)
+      // possibly using LON to find the exact runway start (also prolly make a file for geo data)
+      // lock target_altitude to min(6000, FitLine(50e3, 6000, 6000, 300)(dist)).
+      // lock target_airspeed to min(600, FitLine(50e3, 500, 6000, 150)(dist)).
       Sequence(index, "Landing at KSC - Landing at KSC...").
       lock steering to Heading(90, 3).
       set pid_throttle:setpoint to 75. // airspeed

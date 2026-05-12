@@ -8,6 +8,7 @@ runOncePath("0:/common/menu.ks").
 runOncePath("0:/navigation/flight.ks").
 runOncePath("0:/navigation/rendezvous.ks").
 
+// TODO: Try to find a cleaner solution to these lists
 declare launch_options is list(
   CreateOption("LKO",                     { Mission(SSTOToOrbit()). }),
   CreateOption("LKO - Tourism",           { Mission(list(SSTOToOrbit(), WaitForHours(1), ReturnToKerbin_SSTO())). }),
