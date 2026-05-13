@@ -273,6 +273,7 @@ function LandAtKSC {
 
       when dist < 50e3 then { Sequence(index, "Landing at KSC - Flying towards KSC..."). }
 
+      // TODO: This is fairly repetitive
       // At this point, our flight path should have us at 0.3km alt and 150m/s speed as declared above
       until (ksc:position - ship:position):mag < 5000 {
         set pid_pitch:setpoint to target_altitude.

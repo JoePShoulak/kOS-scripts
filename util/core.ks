@@ -21,6 +21,23 @@ function InitTerminal {
   if greeting:length { print greeting. }
 }
 
+function DistanceToTarget {
+  return (target:position - ship:position):mag.
+}
+
+FUNCTION VectorFromPointToLine {
+    PARAMETER pointPosition.      
+    PARAMETER lineOriginPosition. 
+    PARAMETER lineDirectionVector.
+
+    SET normalizedLineDirection TO lineDirectionVector:NORMALIZED.
+    SET originToPointVector TO pointPosition - lineOriginPosition.
+    SET projectionLengthOntoLine TO VDOT(originToPointVector, normalizedLineDirection).
+    SET closestPointOnLine TO lineOriginPosition + normalizedLineDirection * projectionLengthOntoLine.
+
+    RETURN closestPointOnLine - pointPosition.
+}
+
 function WaitForHours {
   parameter hours.
 
@@ -35,6 +52,8 @@ function WaitForHours {
         set warpmode to "rails".
         wait 5. warpTo(time:seconds + hours * 60 * 60).
         wait until warp = 0.
+        wait until kuniverse:timewarp:issettled().
+        wait 3.
         Sequence(index, "Wait for contract requirment - Waiting complete!", SEQ["COMPLETE"]).
       }
     ).

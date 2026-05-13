@@ -1,0 +1,1 @@
+runPath("0:/_boot/rocket.ks").

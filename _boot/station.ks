@@ -126,17 +126,17 @@ function Handle_Docking {
 
     // port:getModule("ModuleDockingNode"):DoEvent("control from here").
 
-    set station_port_arrow to VecDraw(
-      { return port:position. },
-      { return port:portfacing:forevector * 500. },
-      RGB(0, 0, 1),
-      "Station Port Normal",
-      1.0,
-      true,
-      0.2,
-      true,
-      true
-    ).
+    // set station_port_arrow to VecDraw(
+    //   { return port:position. },
+    //   { return port:portfacing:forevector * 500. },
+    //   RGB(0, 0, 1),
+    //   "Station Port Normal",
+    //   1.0,
+    //   true,
+    //   0.2,
+    //   true,
+    //   true
+    // ).
 
     // Rotate until assigned port faces target
     SET norm_vec TO ship:facing:forevector.
