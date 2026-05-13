@@ -1,6 +1,10 @@
 // stats.ks
 
 // TODO: Double check there's nothing else to review / improve here
+// TODO: Consider adding a border scheme for the UI, seperating a
+// top title bar from the main content section and the stat panel
+// TODO: Consider adding titles to the stat panel as well, to easily 
+// tell the ship status at a glance
 
 function CreateStat {
   parameter label, delegate.
@@ -56,8 +60,7 @@ declare s_dv_normal    is CreateStat("dV - Normal",   { return round(nextnode:no
 declare s_phase_angle  is CreateStat("Phase",         { return round(CalculatePhaseAngle(ksc), 2).                       } ).
 declare s_lat_delta    is CreateStat("Lat delta",     { return round(ksc:geoposition:lat - ship:geoposition:lat, 5).     } ).
 declare s_ksc_dist     is CreateStat("KSC Dist",      { return round((ksc:position - ship:position):mag/1000, 2) + "km". } ).
-// TODO: Fix this timestamp
-declare s_ksc_eta      is CreateStat("KSC ETA",       { return timestamp((ksc:position - ship:position):mag/airspeed).   } ).
+declare s_ksc_eta      is CreateStat("KSC ETA",       { return timestamp((ksc:position - ship:position):mag/airspeed):clock.   } ).
 
 // Misc
 declare s_enginemode   is CreateStat("Engines",       { return ship:engines[0]:mode.                                     } ).
@@ -74,7 +77,6 @@ declare s_supplies     is CreateStat("Supplies",      { return ResourceFillPerce
 declare s_electricity  is CreateStat("Power",         { return ResourceFillPercentage("ElectricCharge").                 } ).
 
 function DrawStatPanel {
-  // TODO: Add titles for these?
   parameter s1, s2, s3, s4, s5, s6, s7, s8.
 
   declare i is 0.
@@ -87,6 +89,7 @@ function DrawStatPanel {
   }
 }
 
+// TODO: improve this stat panel
 function StationStats {
   return DrawStatPanel(
     s_liquidfuel, s_fertilizer, s_machinery, s_materialkits,
@@ -102,6 +105,7 @@ function BaseStats {
   ).
 }
 
+// TODO: improve this stat panel
 function FlightStats_SSTO {
   return DrawStatPanel(
     s_air_speed,  s_altitude, s_apoapsis,  s_thrust,
@@ -109,6 +113,7 @@ function FlightStats_SSTO {
   ).
 }
 
+// TODO: improve this stat panel
 function FlightStats_Landing {
   return DrawStatPanel(
     s_air_speed,  s_altitude, s_ksc_dist, s_lat_delta,
@@ -116,6 +121,7 @@ function FlightStats_Landing {
   ).
 }
 
+// TODO: improve this stat panel
 function FlightStats {
   return DrawStatPanel(
     s_air_speed,  s_altitude, s_apoapsis,  s_thrust,
@@ -123,6 +129,7 @@ function FlightStats {
   ).
 }
 
+// TODO: improve this stat panel
 function ManeuverStats {
   return DrawStatPanel(
     s_fuel,     s_mnv_eta,     s_nodes,     s_thrust,

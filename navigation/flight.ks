@@ -180,7 +180,6 @@ function SetupReturnTrajectory_SSTO {
         }
 
         // Wait until our typical flight path would deliver us on a reasonable approach to KSC
-        // TODO: See if there's a way to determine this less experimentally, as is is fully experimental now
         declare tpa is 225. // target phase angle
         if phase_angle < tpa or phase_angle > tpa + 1 {
           Sequence(index, "Setting up Kerbin Return - Waiting for KSC approach phase angle...").
@@ -206,6 +205,9 @@ function SetupReturnTrajectory_SSTO {
 // REENTER ATMOSPHERE SSTO
 // Handle a high speed return into Kerbin's atmosphere by doing a high AoA descent
 // and a low AoA coast to reasonable speed and altitude
+// TODO: Long-term: Try to do some math and pid to keep the "impact location" close to KSC.
+// (or some practical offset) such that by the end of this sequence, we are in a consistent and
+// reasonable location to begin the landing sequence. This includes SetupReturnTrajectory_SSTO
 function ReenterAtmosphere_SSTO {
   parameter index.
 
@@ -217,10 +219,13 @@ function ReenterAtmosphere_SSTO {
         lock steering to heading(90, 20). 
         Sequence(index, "Returning to Kerbin - Descending with high AoA...").
         wait until kuniverse:timewarp:issettled().
-        // TODO: Fix some warp issues around here - fixed?
         set warp to 3.
-        if altitude > 70e3 { when altitude < 70e3 then { wait until kuniverse:timewarp:issettled(). set warp to 3. }}
-        when altitude < 50e3 then { set warp to 0. }
+        if altitude > 70e3 { when altitude < 70e3 then {
+          wait until kuniverse:timewarp:issettled().
+          wait 1.
+          set warp to 3.
+        }}
+        if altitude > 50e3 { when altitude < 50e3 then { set warp to 0. } }
         when altitude < ship:orbit:body:atm:height then {
           list ENGINES IN my_engines.
           for eng in my_engines { if eng:multimode { eng:togglemode(). } }
@@ -259,17 +264,28 @@ function LandAtKSC {
       declare input_pitch is PitchFor(ship).
       declare input_throttle is 0.
       lock dist to (ksc:position - ship:position):mag.
-      lock target_altitude to min(6000, FitLine(50e3, 6000, 6000, 300)(dist)).
-      lock target_airspeed to min(600, FitLine(50e3, 500, 6000, 150)(dist)).
+      lock target_altitude to min(6000, FitLine(50e3, 6000, 5000, 300)(dist)).
+      lock target_airspeed to min(600, FitLine(50e3, 500, 5000, 150)(dist)).
 
       lock hdg to 90 + 10 * (ship:geoposition:lat - ksc_09_lat).
       lock steering to heading(hdg, input_pitch).
       lock throttle to input_throttle.
 
-      when dist < 50e3 then { Sequence(index, "Landing at KSC - Approaching KSC..."). }
+      when dist < 50e3 then { Sequence(index, "Landing at KSC - Flying towards KSC..."). }
 
       // At this point, our flight path should have us at 0.3km alt and 150m/s speed as declared above
-      until (ksc:position - ship:position):mag < 6000 {
+      until (ksc:position - ship:position):mag < 5000 {
+        set pid_pitch:setpoint to target_altitude.
+        set pid_throttle:setpoint to target_airspeed.
+
+        set input_pitch to pid_pitch:update(time:seconds, altitude).
+        set input_throttle to pid_throttle:update(time:seconds, airspeed).
+        FlightStats_Landing().
+      }
+
+      lock target_altitude to min(300, FitLine(5000, 300, 2000, 200)(dist)).
+      Sequence(index, "Landing at KSC - Approaching KSC...").
+      until (ksc:position - ship:position):mag < 3000 {
         set pid_pitch:setpoint to target_altitude.
         set pid_throttle:setpoint to target_airspeed.
 
@@ -279,18 +295,11 @@ function LandAtKSC {
       }
 
       // We set our airspeed to 75 on PID, our pitch to 3 degrees, put down our gear, and hope
-      // TODO: Consider doing a second lerped pid from the safe point (6km) to runway start (1-2km)
-      // possibly using LON to find the exact runway start (also prolly make a file for geo data)
-      // lock target_altitude to min(6000, FitLine(50e3, 6000, 6000, 300)(dist)).
-      // lock target_airspeed to min(600, FitLine(50e3, 500, 6000, 150)(dist)).
       Sequence(index, "Landing at KSC - Landing at KSC...").
       lock steering to Heading(90, 3).
       set pid_throttle:setpoint to 75. // airspeed
       set gear to true.
-      declare pid_roll is pidloop(1, 0.1, 0.5, -1, 1).
       until status = "landed" or status = "SPLASHED" {
-        set desired_roll to pid_roll:update(time:seconds, ship:geoposition:lat).
-        set ship:control:translation to v(-desired_roll, 0, 0). // TODO: Don't use RCS?
         set input_throttle to pid_throttle:update(time:seconds, airspeed).
         FlightStats_Landing().
       }
