@@ -17,7 +17,6 @@ runOncePath("0:/common/sequence.ks").
 //   - Takeoff speed: The speed at which to perform the above pitch
 //   - Takeoff alt: The altitude at which the pitch switches from takeoff_pitch to pitch
 //   - Safe alt: We pitch up until we reach this altitude
-
 function Takeoff {
   parameter index.
 
@@ -34,6 +33,7 @@ function Takeoff {
       lock throttle to 1.0.
       lock steering to HEADING(90, 0).
       set brakes to false.
+      set warpmode to "physics".
 
       // Light the engines
       Sequence(index, "Takeoff - Ignition...").
@@ -100,7 +100,6 @@ function LevelFlightToSpeed {
 //        (should be 90 for equatorial orbit benefits. Should also be the heading from previous step(s))
 // - Thrust Cutoff Check: The thrust at which, late in the function, we begin checking for loss of speed, indicating the
 //                        air-breathing mode is too lossy to continue, so we switch to the less-efficient closed-cycle mode. 
-
 function PitchToOrbit {
   parameter index.
 
@@ -207,7 +206,8 @@ function SetupReturnTrajectory_SSTO {
 // and a low AoA coast to reasonable speed and altitude
 // TODO: Long-term: Try to do some math and pid to keep the "impact location" close to KSC.
 // (or some practical offset) such that by the end of this sequence, we are in a consistent and
-// reasonable location to begin the landing sequence. This includes SetupReturnTrajectory_SSTO
+// reasonable location to begin the landing sequence. This includes SetupReturnTrajectory_SSTO.
+// Also, improve the true moment of landing. 
 function ReenterAtmosphere_SSTO {
   parameter index.
 
@@ -285,7 +285,7 @@ function LandAtKSC {
 
       lock target_altitude to min(300, FitLine(5000, 300, 2000, 200)(dist)).
       Sequence(index, "Landing at KSC - Approaching KSC...").
-      until (ksc:position - ship:position):mag < 3000 {
+      until (ksc:position - ship:position):mag < 3200 {
         set pid_pitch:setpoint to target_altitude.
         set pid_throttle:setpoint to target_airspeed.
 
