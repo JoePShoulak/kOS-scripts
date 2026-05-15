@@ -1,5 +1,5 @@
 runOncePath("0:/util/core.ks").
-runOncePath("0:/navigation/flight.ks").
+runOncePath("0:/navigation/autopilot.ks").
 
 set cam to addons:camera:flightcamera.
 set cam:mode to "CHASE".
