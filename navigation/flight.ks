@@ -35,7 +35,7 @@ declare global Autopilot is lexicon(
     )).
 
     this:add("pid", lexicon(
-      "pitch", pidloop(3, 0.1, 10, -10, 10),
+      "pitch", pidloop(5, 0.1, 30, -10, 10),
       "heading", pidloop(1, 0.1, 15, -5, 5),
       "throttle", pidloop(0.1, 0.01, 0.1, 0, 1),
       "update", {
@@ -57,6 +57,7 @@ declare global Autopilot is lexicon(
     this:add("Ignition", {
       print "Ignition...".
       set this:pid:throttle:setpoint to Autopilot:default_speed.
+      set this:pid:pitch:setpoint to Autopilot:default_altitude.
       stage.
     }).
 
@@ -69,10 +70,8 @@ declare global Autopilot is lexicon(
       lock steering to Heading(this:Heading(), 0).
       until airspeed > Autopilot:default_takeoff_speed { this:pid:update(). }
       
-      lock steering to Heading(this:Heading(), 10).
-      set this:pid:pitch:setpoint to Autopilot:default_altitude.
-      when alt:radar > 100 then { this:FullAuto(). }
-      until altitude >= this:pid:pitch:setpoint { this:pid:update(). }
+      this:fullauto().
+      until altitude >= this:pid:pitch:setpoint - 10 { this:pid:update(). }
     }).
 
     this:add("HeadingError", {
@@ -99,6 +98,66 @@ declare global Autopilot is lexicon(
 
       declare start_time is time:seconds().
       until time:seconds > start_time + minutes*60 { this:pid:update(). }
+    }).
+
+    this:add("ApproachRunway", {
+      parameter target_speed is 100.
+
+      print "Lining up with the runway...".
+
+      // TODO: Classify destinations, airports, etc...
+      declare ksc is Waypoint("KSC").
+      declare ksc_09_lat is -0.0485998228908655. // Runway 9 true lat
+      lock lat_err to ksc_09_lat - ship:geoposition:lat.
+
+      declare pid_hdg is pidloop(500, 1, 100, -15, 15).
+      declare input_hdg is 90.
+
+      declare pid_pitch is pidloop(3, 0.1, 30, -10, 10).
+      lock dist to (ksc:position - ship:position):mag.
+      set initial_altitude to altitude.
+      // declare runway_start is 2000.
+      declare runway_start is 2500.
+      declare descent_end is runway_start + 500. // meters away from runway start
+      declare descent_start is initial_altitude * 6 + descent_end.
+      declare descent_target_height is 175.
+      lock target_altitude to max(descent_target_height, min(initial_altitude, FitLine(descent_start, initial_altitude, descent_end, descent_target_height)(dist))).
+      set pid_pitch:setpoint to altitude.
+      declare input_pitch is PitchFor(ship).
+
+      declare pid_throttle is pidloop(0.1, 0.01, 0.1, 0, 1).
+      set pid_throttle:setpoint to target_speed.
+      declare input_throttle is throttle.
+
+      lock throttle to input_throttle.
+      lock steering to Heading(input_hdg, input_pitch).
+
+      clearScreen.
+      until dist < runway_start {
+        set pid_pitch:setpoint to target_altitude.
+        set input_pitch to pid_pitch:update(time:seconds, altitude).
+        set input_hdg to 90 + pid_hdg:update(time:seconds, lat_err).
+        set input_throttle to pid_throttle:update(time:seconds, airspeed).
+        print "Lat err: " + round(lat_err, 8) + ", inp_hdg: " + round(input_hdg, 2) at(0,0).
+        print ("target_alt: " + round(target_altitude) + ", inp_pitch: " + round(input_pitch, 2) + ", dist: " + round(dist)):padright(10) at(0,1).
+      }
+
+      // TODO: Move this to a land function so it can be called for unprogrammed runways
+      set pid_pitch:setpoint to 0.
+      set pid_throttle:setpoint to 50.
+      set input_hdg to 90.
+      until ship:status = "LANDED" {
+        set input_pitch to pid_pitch:update(time:seconds, alt:radar).
+        set input_hdg to 90 + pid_hdg:update(time:seconds, lat_err).
+        set input_throttle to pid_throttle:update(time:seconds, airspeed).
+        if alt:radar <= 2 { break. }
+        print "Lat err: " + round(lat_err, 8) + ", inp_hdg: " + round(input_hdg, 2) at(0,0).
+        print ("target_alt: " + round(target_altitude) + ", inp_pitch: " + round(input_pitch, 2) + ", dist: " + round(dist)):padright(10) at(0,1).
+      }
+
+      lock throttle to 0.
+      lock steering to heading(90, 0).
+      brakes on.
     }).
 
     return this.
