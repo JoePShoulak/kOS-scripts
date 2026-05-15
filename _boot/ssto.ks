@@ -43,5 +43,5 @@ until false {
     IdleScreen().
     InitTerminal("Welcome to the " + ship:name + " kOS autpilot!").
     SequenceMenu(orbit_options).
-    }
+  }
 }
