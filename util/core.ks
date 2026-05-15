@@ -9,6 +9,15 @@ runOncePath("0:/common/stats.ks").
 // UTILITY //
 /////////////
 
+
+
+function WaitForSeconds {
+  parameter seconds.
+
+  declare local init_time is time:seconds().
+  wait until time:seconds() > init_time + seconds.
+}
+
 // INIT TERMINAL: 
 //   Clears and brings up the kOS Terminal in-game
 function InitTerminal {
