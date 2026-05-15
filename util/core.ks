@@ -190,18 +190,10 @@ function PitchFor {
 
 function FitLine {
   parameter x1, y1, x2, y2.
-  parameter extrapolate is false.
-
-  declare max_y is max(y1, y2).
-  declare min_y is min(y1, y2).
 
   declare m is (y2-y1)/(x2-x1).
 
-  if extrapolate {
-    return { parameter x. return m * (x - x1) + y1. }.
-  } else {
-    return { parameter x. return min(max_y, max(min_y, m * (x - x1) + y1)). }.
-  }
+  return { parameter x. return m * (x - x1) + y1. }.
 }
 
 function FitQuadratic {

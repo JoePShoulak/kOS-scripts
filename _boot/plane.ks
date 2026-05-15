@@ -8,7 +8,7 @@ InitTerminal("Welcome to the " + ship:name + " autopilot!").
 
 declare AP is Autopilot:init().
 
-AP:takeoff().
+AP:Takeoff().
 AP:ChangeHeading(180).
 AP:ChangeHeading(270).
 AP:HoldForMinutes(3).
