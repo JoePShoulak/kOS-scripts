@@ -2,97 +2,108 @@
 
 runOncePath("0:/util/core.ks").
 
-// HELPERS
+declare global Autopilot is lexicon(
+  "default_altitude", 2500,
+  "default_takeoff_speed", 60,
+  "default_speed", 300,
 
-function GlobalHeadingToRelative {
-  parameter intitial_heading.
-  parameter global_heading.
+  "GHTR", { // Global Heading to Relative
+    parameter intitial_heading.
+    parameter global_heading.
 
-  declare output is -180 + mod(global_heading - intitial_heading + 180, 360).
-  if output < -180 { set output to 360 + output. } // FIXME
-  return output.
-}
+    declare output is -180 + mod(global_heading - intitial_heading + 180, 360).
+    if output < -180 { set output to 360 + output. } // FIXME
+    return output.
+  },
 
-// MAIN
+  "init", {
+    set this to lexicon().
 
-// TODO: Detect more failure states
-function Failsafe {
-  when ship:verticalspeed < -50 and alt:radar < 1000 then { print "Bailing...". abort on. }
-}
+    // Failsafe
+    // TODO: Detect more failure states
+    when ship:verticalspeed < -50 and alt:radar < 1000 then { print "Bailing...". abort on. }
 
-function Takeoff {
-  parameter takeoff_altitude is 2500.
+    // Helpers
+    this:add("Heading", { return mod(360 - ship:bearing, 360). }).
 
-  if ship:availablethrust = 0 {
-    print "Ignition...".
-    lock steering to heading(90, 0).
-    lock throttle to 1.0.
-    stage.
+    // Properties
+    this:add("target_heading", this:Heading()).
+    this:add("input", lexicon(
+      "heading", 0,
+      "pitch", altitude,
+      "throttle", 0
+    )).
+
+    this:add("pid", lexicon(
+      "pitch", pidloop(3, 0.1, 10, -10, 10),
+      "heading", pidloop(1, 0.1, 15, -5, 5),
+      "throttle", pidloop(0.1, 0.01, 0.1, 0, 1),
+      "update", {
+        set this:input:pitch to this:pid:pitch:update(time:seconds, altitude).
+        set this:input:heading to this:pid:heading:update(time:seconds, this:HeadingError()).
+        set this:input:throttle to this:pid:throttle:update(time:seconds, airspeed).      
+      }
+    )).
+
+    lock throttle to this:input:throttle.
+    // TODO: Not sure I like this solution
+    this:add("FullAuto", {
+      lock steering to Heading(mod(this:Heading() + this:input:heading, 360), this:input:pitch).
+    }).
+
+    ////////////////// Steps
+
+    // Start the plane and give it some gas
+    this:add("Ignition", {
+      print "Ignition...".
+      set this:pid:throttle:setpoint to Autopilot:default_speed.
+      stage.
+    }).
+
+    // Get it off the ground
+    this:add("Takeoff", {
+      if ship:availableThrust = 0 { this:ignition(). }
+
+      print "Takeoff...".
+
+      lock steering to Heading(this:Heading(), 0).
+      until airspeed > Autopilot:default_takeoff_speed { this:pid:update(). }
+      
+      lock steering to Heading(this:Heading(), 10).
+      set this:pid:pitch:setpoint to Autopilot:default_altitude.
+      when alt:radar > 100 then { this:FullAuto(). }
+      until altitude >= this:pid:pitch:setpoint { this:pid:update(). }
+    }).
+
+    this:add("HeadingError", {
+      return Autopilot:GHTR(this:target_heading, this:Heading()).
+    }).
+
+    // Changes in heading need some special attention
+    // TODO: Or do they?
+    this:add("ChangeHeading", {
+      parameter hdg.
+
+      print "Assuming heading of " + hdg + "...".
+
+      set this:target_heading to hdg.
+
+      until abs(this:HeadingError()) < 1 { this:pid:update(). }
+    }).
+    
+    // Keep the current course for some number of minutes
+    this:add("HoldForMinutes", {
+      parameter minutes.
+
+      print "Flying this course for " + minutes + " minutes...".
+
+      declare start_time is time:seconds().
+      until time:seconds > start_time + minutes*60 { this:pid:update(). }
+    }).
+
+    return this.
   }
-
-  print "Takeoff...".
-  set warpmode to "physics".
-  set warp to 1.
-  when alt:radar > 10 then { set warp to 3. }
-  wait until airspeed > 60.
-  declare pid_pitch is pidloop(3, 0.1, 10, -10, 10).
-  set pid_pitch:setpoint to takeoff_altitude.
-  declare input_pitch is 0.
-  lock steering to heading(90, input_pitch).
-  until altitude >= takeoff_altitude { set input_pitch to pid_pitch:update(time:seconds, altitude). }
-}
-
-// TODO: Add throttle and altitude
-function ChangeHeading {
-  parameter target_global_heading.
-
-  print "Changing heading to " + target_global_heading + "...".
-
-  // Maintain altitude
-  declare pid_pitch is pidloop(3, 0.1, 30, -10, 10).
-  set pid_pitch:setpoint to altitude.
-  declare input_pitch is PitchFor(ship).
-  
-  // Heading stuff
-  lock current_global_heading to mod(360 - ship:bearing, 360). // always our true heading
-  declare intitial_global_heading is current_global_heading.   // our intial true heading
-
-  lock current_relative_heading to GlobalHeadingToRelative(intitial_global_heading, current_global_heading). // The amount we've turned
-  declare target_relative_heading is GlobalHeadingToRelative(intitial_global_heading, target_global_heading). // The total amount we need to turn
-
-  declare pid_hdg is pidloop(1, 0.1, 15, -5, 5). // Make the pid
-  set pid_hdg:setpoint to target_relative_heading. // Set the goal to the amount we need to turn
-  declare input_hdg is 0. // Start with a change in steering of 0
-
-  lock steering to Heading(mod(current_global_heading + input_hdg, 360), input_pitch). // steer towards our true heading + the calc'd input
-  until abs(current_relative_heading - target_relative_heading) < 1 { // We are at our target
-    // print "int_glb: " + round(intitial_global_heading, 2) + ", cur_glb: " + round(current_global_heading, 2) + ", cur_rel: " + round(current_relative_heading, 2) + ", tgt_rel: " + round(target_relative_heading, 2) + ", input: " + round(input_hdg, 2) .
-    set input_pitch to pid_pitch:update(time:seconds, altitude).
-    set input_hdg   to pid_hdg:update(  time:seconds, current_relative_heading). // Set the new input to the pid output after giving it our progress so far
-  }
-
-  lock steering to Heading(target_global_heading, input_pitch).
-}
-
-// TODO: Add throttle and altitude
-function FlyForMinutes {
-  parameter minutes.
-  parameter target_heading is mod(360 - ship:bearing, 360).
-
-  print "Flying this course for " + minutes + " minutes...".
-
-  // Maintain altitude
-  declare pid_pitch is pidloop(3, 0.1, 30, -10, 10).
-  set pid_pitch:setpoint to altitude.
-  declare input_pitch is PitchFor(ship).
-  
-
-  lock steering to Heading(target_heading, input_pitch). // steer towards our true heading + the calc'd input
-  declare init_time is time:seconds().
-  until  time:seconds > init_time + minutes*60 { // We are at our target
-    set input_pitch to pid_pitch:update(time:seconds, altitude).
-  }
-}
+).
 
 // Can land you on KSC runway 09.
 // Tested with ~15km distance due west, 2500 altitude, heading 90
@@ -107,13 +118,14 @@ function ApproachRunway {
   declare ksc_09_lat is -0.0485998228908655. // Runway 9 true lat
   lock lat_err to ksc_09_lat - ship:geoposition:lat.
 
-  declare pid_hdg is pidloop(200, 1, 100, -15, 15).
+  declare pid_hdg is pidloop(500, 1, 100, -15, 15).
   declare input_hdg is 90.
 
   declare pid_pitch is pidloop(3, 0.1, 30, -10, 10).
   lock dist to (ksc:position - ship:position):mag.
   set initial_altitude to altitude.
-  declare runway_start is 2000.
+  // declare runway_start is 2000.
+  declare runway_start is 2500.
   declare descent_end is runway_start + 500. // meters away from runway start
   declare descent_start is initial_altitude * 6 + descent_end.
   declare descent_target_height is 175.
@@ -137,8 +149,6 @@ function ApproachRunway {
     print "Lat err: " + round(lat_err, 8) + ", inp_hdg: " + round(input_hdg, 2) at(0,0).
     print ("target_alt: " + round(target_altitude) + ", inp_pitch: " + round(input_pitch, 2) + ", dist: " + round(dist)):padright(10) at(0,1).
   }
-  set warp to 0.
-
 
   set pid_pitch:setpoint to 0.
   set pid_throttle:setpoint to 50.
@@ -155,6 +165,9 @@ function ApproachRunway {
   lock steering to heading(90, 0).
   brakes on.
 }
+
+// ROUTINES
+
 
 /////////////// OLD FLIGHT BELOW //////////////////////
 
