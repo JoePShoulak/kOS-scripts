@@ -30,9 +30,11 @@ declare global Autopilot is lexicon(
     this:add("target_heading", this:Heading()).
     this:add("input", lexicon(
       "heading", 0,
-      "pitch", altitude,
+      "pitch", 0,
       "throttle", 0
     )).
+
+    lock throttle to this:input:throttle.
 
     this:add("pid", lexicon(
       "pitch", pidloop(5, 0.1, 30, -10, 10),
@@ -45,7 +47,6 @@ declare global Autopilot is lexicon(
       }
     )).
 
-    lock throttle to this:input:throttle.
     // TODO: Not sure I like this solution
     this:add("FullAuto", {
       lock steering to Heading(mod(this:Heading() + this:input:heading, 360), this:input:pitch).
@@ -107,21 +108,21 @@ declare global Autopilot is lexicon(
 
       // TODO: Classify destinations, airports, etc...
       declare ksc is Waypoint("KSC").
-      declare ksc_09_lat is -0.0485998228908655. // Runway 9 true lat
-      lock lat_err to ksc_09_lat - ship:geoposition:lat.
+      lock lat_err to ksc:geoposition:lat - ship:geoposition:lat.
 
       declare pid_hdg is pidloop(500, 1, 100, -15, 15).
       declare input_hdg is 90.
 
       declare pid_pitch is pidloop(3, 0.1, 30, -10, 10).
       lock dist to (ksc:position - ship:position):mag.
+      // FIXME: Start here on the refactor, this flight profile is the most important part
       set initial_altitude to altitude.
-      // declare runway_start is 2000.
       declare runway_start is 2500.
       declare descent_end is runway_start + 500. // meters away from runway start
       declare descent_start is initial_altitude * 6 + descent_end.
       declare descent_target_height is 175.
-      lock target_altitude to max(descent_target_height, min(initial_altitude, FitLine(descent_start, initial_altitude, descent_end, descent_target_height)(dist))).
+      lock target_altitude to FitLine(descent_start, initial_altitude, descent_end, descent_target_height)(dist).
+      
       set pid_pitch:setpoint to altitude.
       declare input_pitch is PitchFor(ship).
 
@@ -163,67 +164,6 @@ declare global Autopilot is lexicon(
     return this.
   }
 ).
-
-// Can land you on KSC runway 09.
-// Tested with ~15km distance due west, 2500 altitude, heading 90
-// Should generally work if west of KSC and within 15deg of the start of the runway, 
-// if starting with reasonable height and speed
-function ApproachRunway {
-  parameter target_speed is 100.
-
-  print "Lining up with the runway...".
-
-  declare ksc is Waypoint("KSC").
-  declare ksc_09_lat is -0.0485998228908655. // Runway 9 true lat
-  lock lat_err to ksc_09_lat - ship:geoposition:lat.
-
-  declare pid_hdg is pidloop(500, 1, 100, -15, 15).
-  declare input_hdg is 90.
-
-  declare pid_pitch is pidloop(3, 0.1, 30, -10, 10).
-  lock dist to (ksc:position - ship:position):mag.
-  set initial_altitude to altitude.
-  // declare runway_start is 2000.
-  declare runway_start is 2500.
-  declare descent_end is runway_start + 500. // meters away from runway start
-  declare descent_start is initial_altitude * 6 + descent_end.
-  declare descent_target_height is 175.
-  lock target_altitude to max(descent_target_height, min(initial_altitude, FitLine(descent_start, initial_altitude, descent_end, descent_target_height)(dist))).
-  set pid_pitch:setpoint to altitude.
-  declare input_pitch is PitchFor(ship).
-
-  declare pid_throttle is pidloop(0.1, 0.01, 0.1, 0, 1).
-  set pid_throttle:setpoint to target_speed.
-  declare input_throttle is throttle.
-
-  lock throttle to input_throttle.
-  lock steering to Heading(input_hdg, input_pitch).
-
-  clearScreen.
-  until dist < runway_start {
-    set pid_pitch:setpoint to target_altitude.
-    set input_pitch to pid_pitch:update(time:seconds, altitude).
-    set input_hdg to 90 + pid_hdg:update(time:seconds, lat_err).
-    set input_throttle to pid_throttle:update(time:seconds, airspeed).
-    print "Lat err: " + round(lat_err, 8) + ", inp_hdg: " + round(input_hdg, 2) at(0,0).
-    print ("target_alt: " + round(target_altitude) + ", inp_pitch: " + round(input_pitch, 2) + ", dist: " + round(dist)):padright(10) at(0,1).
-  }
-
-  set pid_pitch:setpoint to 0.
-  set pid_throttle:setpoint to 50.
-  set input_hdg to 90.
-  until ship:status = "LANDED" {
-    set input_pitch to pid_pitch:update(time:seconds, alt:radar).
-    set input_throttle to pid_throttle:update(time:seconds, airspeed).
-    if alt:radar <= 2 { break. }
-    print "Lat err: " + round(lat_err, 8) + ", inp_hdg: " + round(input_hdg, 2) at(0,0).
-    print ("target_alt: " + round(target_altitude) + ", inp_pitch: " + round(input_pitch, 2) + ", dist: " + round(dist)):padright(10) at(0,1).
-  }
-
-  lock throttle to 0.
-  lock steering to heading(90, 0).
-  brakes on.
-}
 
 // ROUTINES
 

@@ -6,14 +6,14 @@ set cam:mode to "CHASE".
 
 InitTerminal("Welcome to the " + ship:name + " autopilot!").
 
-declare ap is Autopilot:init().
+declare AP is Autopilot:init().
 
-ap:takeoff().
-ap:ChangeHeading(180).
-ap:ChangeHeading(270).
-ap:HoldForMinutes(3).
-ap:ChangeHeading(360).
-ap:ChangeHeading(90).
-ap:ApproachRunway().
+AP:takeoff().
+AP:ChangeHeading(180).
+AP:ChangeHeading(270).
+AP:HoldForMinutes(3).
+AP:ChangeHeading(360).
+AP:ChangeHeading(90).
+AP:ApproachRunway().
 
 wait until false.
