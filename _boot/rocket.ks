@@ -13,69 +13,90 @@ function AutoStage {
   }
   if ship:availablethrust < (oldThrust - 10) {
     doSafeStage(). wait 1.
+    lock throttle to 1.0. // FIXME
     declare global oldThrust to ship:availablethrust.
   }
 }
 
 function LaunchRocket {
-  parameter index.
+  print "Launching...".
+  lock steering to Heading(90, 75).
+  stage. 
+  wait 3.
+  set warpmode to "physics".
+  set warp to 3.
+  lock steering to ship:srfprograde.
 
-  return lexicon(
-    "init", { Sequence(index, "Launch", SEQ["IDLE"]). },
-    "exec", {
-      lock steering to ship:up.
-      lock throttle to 1.0.
-      stage. 
-      
-      when altitude > 10e3 then {
-        when altitude < 10e3 then {
-          set chutes to true.
-          Sequence(index, "Launch - Waiting for chutes...").
-          until stage:number = 0  { stage. }
-        }
-      } // failsafe
+  until apoapsis > 100e3 { AutoStage(). }
 
-      Sequence(index, "Launch - Pushing apoapsis to 80km...").
-      until apoapsis > 80e3 { 
-        AutoStage().
-        FlightStats().
-      }
-      lock throttle to 0.0.
-      when ship:thrust = 0 then { stage. }
+  lock throttle to 0.0.
 
-      Sequence(index, "Launch - Coasting to space...").
-      until altitude > 70e3 { FlightStats(). }.
+  wait until altitude > 90e3.
+  lock steering to Heading(90, 0).
+  wait until altitude > 95e3.
 
-      Sequence(index, "Launch - Pushing apopasis to 80km...").
-      lock steering to heading(90, 0).
-      lock throttle to 1.0.
-      until periapsis > 80e3 { FlightStats(). }.
-      lock throttle to 0.0.
-      
-      Sequence(index, "Launch - Waiting an hour...").
-      warpto(time:seconds + 60*60).
-      
-      Sequence(index, "Launch - Breaking orbit...").
-      lock steering to retrograde.
-      lock throttle to 1.0.
-      until periapsis < 55e3 { FlightStats(). }.
-      lock throttle to 0.0.
+  lock throttle to 1.0.
+  until periapsis > 90e3 { AutoStage(). }
+  lock throttle to 0.0.
+  set warp to 0.
+  wait until kuniverse:timewarp:issettled() and warp = 0 and ship:thrust = 0.
+  wait 3.
+}
 
-      Sequence(index, "Launch - Killing remaining speed...").
-      until altitude < 60e3 { FlightStats(). }.
-      lock throttle to 1.0.
-      lock steering to ship:up.
+function WaitForContract {
+  print "Waiting...".
+  parameter hours is 1.
 
-      Sequence(index, "Launch - Waiting for chutes...").
+  wait 2.
 
-      until ship:status = "LANDED" or ship:status = "SPLASHED" { FlightStats(). }
-      Sequence(index, "Launch - Landed!", SEQ["COMPLETE"]).
-    }
-  ).
+  declare init_time is time:seconds().
+  until time:seconds() - init_time > 60 {
+    warpto(time:seconds() + hours*60*60).
+    wait until kuniverse:timewarp:issettled() and warp = 0.
+  }
+
+}
+
+function BreakOrbit {
+  print "Returning...".
+  parameter target_pe is 55e3. 
+
+  wait until kuniverse:timewarp:issettled() and warp = 0 and ship:thrust = 0.
+  wait 3.
+
+  warpto(time:seconds() + eta:apoapsis).
+  wait until kuniverse:timewarp:issettled() and warp = 0 and ship:thrust = 0.
+  lock steering to retrograde.
+  wait 5.
+  lock throttle to 1.0.
+  until periapsis <= target_pe { autostage(). }
+  lock throttle to 0.0.
+}
+
+function Land {
+  print "Landing...".
+  wait until kuniverse:timewarp:issettled() and warp = 0 and ship:thrust = 0.
+  wait 3.
+  warpto(time:seconds() + eta:periapsis).
+  wait until altitude < 70e3.
+  wait until kuniverse:timewarp:issettled() and warp = 0 and ship:thrust = 0.
+  wait 3.
+  set warpmode to "physics".
+  set warp to 3.
+  lock steering to ship:srfretrograde.
+
+  lock throttle to 1.0.
+  wait 3.
+  until ship:stagenum = 0 {
+    if ship:thrust = 0 { stage. }
+    else { AutoStage(). }
+  }
+
+  when alt:radar < 2000 then { chutes on. stage. }
 }
 
 declare launch_options is list(
-  CreateOption("LKO", { Mission(list(LaunchRocket@)). })
+  CreateOption("LKO", { LaunchRocket(). WaitForContract(). BreakOrbit(). Land(). })
 ).
 
 until false {

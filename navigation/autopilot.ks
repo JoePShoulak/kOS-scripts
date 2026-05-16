@@ -74,6 +74,7 @@ declare global Autopilot is lexicon(
       print "Ignition...".
       set this:pid:throttle:setpoint to Autopilot:default_speed.
       set this:pid:pitch:setpoint to Autopilot:default_altitude.
+      set warpmode to "physics".
       stage.
     }).
 
@@ -82,6 +83,7 @@ declare global Autopilot is lexicon(
       if ship:availableThrust = 0 { this:ignition(). }
 
       print "Takeoff...".
+      set warp to 1. when alt:radar > 100 then { set warp to 3. }
 
       lock steering to Heading(this:Heading(), 0).
       until airspeed > Autopilot:default_takeoff_speed { this:pid:update(). }
@@ -153,6 +155,10 @@ declare global Autopilot is lexicon(
     // TODO: Test landing manually using this function (no dest)
     this:add("Land", {
       parameter dest.
+
+      print "Landing".
+
+      set warp to 0. 
 
       declare pid_hdg is pidloop(500, 1, 100, -15, 15).
       declare input_hdg is choose 90 if dest = "KSC" else this:Heading().

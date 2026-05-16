@@ -6,12 +6,16 @@ set cam:mode to "CHASE".
 
 InitTerminal("Welcome to the " + ship:name + " autopilot!").
 
+set Autopilot:default_altitude to 10010.
 declare AP is Autopilot:init().
 
+// TODO: Adjust some part of the landing sequence to take the altitude into account,
+// and decide if you're too close to land from that altitude
 AP:Takeoff().
 AP:ChangeHeading(180).
 AP:ChangeHeading(270).
-AP:HoldForMinutes(3).
+// AP:HoldForMinutes(3).
+AP:HoldForMinutes(12).
 AP:ChangeHeading(360).
 AP:ChangeHeading(90).
 AP:ApproachRunway().
