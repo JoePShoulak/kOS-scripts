@@ -1,8 +1,8 @@
-// autopilot.ks
+// Autopilot_plane.ks
 
 runOncePath("0:/util/core.ks").
 
-declare global Autopilot is lexicon(
+declare global Autopilot_plane is lexicon(
   "default_altitude", 2500,
   "default_takeoff_speed", 60,
   "default_speed", 300,
@@ -14,7 +14,7 @@ declare global Autopilot is lexicon(
     lock lat_err to ksc:geoposition:lat - ship:geoposition:lat.
 
     lock dist to (ksc:position - ship:position):mag.
-    declare runway_start is Autopilot:default_landing_distance.
+    declare runway_start is Autopilot_plane:default_landing_distance.
     declare descent_end is runway_start + 500. // meters away from runway start
     declare descent_start is intitial_altitude * 6 + descent_end.
     declare descent_target_height is 175.
@@ -32,7 +32,7 @@ declare global Autopilot is lexicon(
   },
 
   "init", {
-    set this to lexicon().
+    declare this is lexicon().
 
     // Failsafe
     // TODO: Detect more failure states
@@ -72,8 +72,8 @@ declare global Autopilot is lexicon(
     // Start the plane and give it some gas
     this:add("Ignition", {
       print "Ignition...".
-      set this:pid:throttle:setpoint to Autopilot:default_speed.
-      set this:pid:pitch:setpoint to Autopilot:default_altitude.
+      set this:pid:throttle:setpoint to Autopilot_plane:default_speed.
+      set this:pid:pitch:setpoint to Autopilot_plane:default_altitude.
       set warpmode to "physics".
       stage.
     }).
@@ -86,14 +86,14 @@ declare global Autopilot is lexicon(
       set warp to 1. when alt:radar > 100 then { set warp to 3. }
 
       lock steering to Heading(this:Heading(), 0).
-      until airspeed > Autopilot:default_takeoff_speed { this:pid:update(). }
+      until airspeed > Autopilot_plane:default_takeoff_speed { this:pid:update(). }
       
       this:fullauto().
       until altitude >= this:pid:pitch:setpoint - 10 { this:pid:update(). }
     }).
 
     this:add("HeadingError", {
-      return Autopilot:GHTR(this:target_heading, this:Heading()).
+      return Autopilot_plane:GHTR(this:target_heading, this:Heading()).
     }).
 
     // Changes in heading need some special attention
@@ -133,7 +133,7 @@ declare global Autopilot is lexicon(
 
       lock dist to (ksc:position - ship:position):mag.
       set initial_altitude to altitude.
-      lock target_altitude to Autopilot:CreateDescentProfile(initial_altitude)(dist).
+      lock target_altitude to Autopilot_plane:CreateDescentProfile(initial_altitude)(dist).
       
       set this:pid:pitch:setpoint to altitude.
       set this:pid:throttle:setpoint to target_speed.
@@ -141,7 +141,7 @@ declare global Autopilot is lexicon(
       lock steering to Heading(input_hdg, this:input:pitch).
 
       // TODO: Find a way to make this work with this:pid:update()
-      until dist < Autopilot:default_landing_distance {
+      until dist < Autopilot_plane:default_landing_distance {
         set this:pid:pitch:setpoint to target_altitude.
         set this:input:pitch to this:pid:pitch:update(time:seconds, altitude).
         set this:input:throttle to this:pid:throttle:update(time:seconds, airspeed).

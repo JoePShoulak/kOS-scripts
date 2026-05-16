@@ -1,13 +1,13 @@
 runOncePath("0:/util/core.ks").
-runOncePath("0:/navigation/autopilot.ks").
+runOncePath("0:/navigation/autopilot_plane.ks").
 
 set cam to addons:camera:flightcamera.
 set cam:mode to "CHASE".
 
 InitTerminal("Welcome to the " + ship:name + " autopilot!").
 
-set Autopilot:default_altitude to 10010.
-declare AP is Autopilot:init().
+set Autopilot_plane:default_altitude to 10010.
+declare AP is Autopilot_plane:init().
 
 // TODO: Adjust some part of the landing sequence to take the altitude into account,
 // and decide if you're too close to land from that altitude

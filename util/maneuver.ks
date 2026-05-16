@@ -58,7 +58,7 @@ function ExecuteManeuver {
   warpTo(startTime - 10).
   until time:seconds > startTime { ManeuverStats(). }
   lock throttle to 1.
-  until IsManeuverComplete(mnv) { ManeuverStats(). }
+  until IsManeuverComplete(mnv) { ManeuverStats(). if ship:thrust = 0 { stage. wait 1. } }
   // TODO: Better throttle smoothing
   lock throttle to 0.
   unlock steering.

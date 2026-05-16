@@ -9,8 +9,26 @@ runOncePath("0:/util/maneuver.ks").
 // to be able to both display the distance to target in rendezvous stats, as wellas refine
 // hohmann intercept maneuvers before performing the burns
 
-function CircularizeAtApoapsis { ChangePEAtAP(apoapsis). }
-function CircularizeAtPreiapsis { ChangeAPAtPE(periapsis). }
+// TODO: Make this work, eventually
+function ContinueBurnUntilCircular {
+  lock throttle to 0.1.
+  declare old_ecc is ship:orbit:eccentricity.
+  until ship:orbit:eccentricity > old_ecc {
+    wait 1.
+    set old_ecc to ship:orbit:eccentricity.
+  }
+  lock throttle to 0.0.
+}
+
+function CircularizeAtApoapsis { 
+  ChangePEAtAP(apoapsis).
+  // ContinueBurnUntilCircular().
+}
+
+function CircularizeAtPreiapsis { 
+  ChangeAPAtPE(periapsis).
+  // ContinueBurnUntilCircular().
+}
 
 function CalcDVForNewSMA {
   parameter new_SMA.
