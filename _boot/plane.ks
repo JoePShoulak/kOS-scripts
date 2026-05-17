@@ -6,7 +6,6 @@ set cam:mode to "CHASE".
 
 InitTerminal("Welcome to the " + ship:name + " autopilot!").
 
-set Autopilot_plane:default_altitude to 10010.
 declare AP is Autopilot_plane:init().
 
 // TODO: Adjust some part of the landing sequence to take the altitude into account,
@@ -14,8 +13,7 @@ declare AP is Autopilot_plane:init().
 AP:Takeoff().
 AP:ChangeHeading(180).
 AP:ChangeHeading(270).
-// AP:HoldForMinutes(3).
-AP:HoldForMinutes(12).
+AP:HoldForMinutes(3).
 AP:ChangeHeading(360).
 AP:ChangeHeading(90).
 AP:ApproachRunway().

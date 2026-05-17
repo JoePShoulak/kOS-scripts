@@ -129,7 +129,7 @@ declare global Autopilot_plane is lexicon(
       lock lat_err to ksc:geoposition:lat - ship:geoposition:lat.
 
       declare pid_hdg is pidloop(500, 1, 100, -15, 15).
-      declare input_hdg is 90.
+      // declare input_hdg is 90.
 
       lock dist to (ksc:position - ship:position):mag.
       set initial_altitude to altitude.
@@ -138,14 +138,16 @@ declare global Autopilot_plane is lexicon(
       set this:pid:pitch:setpoint to altitude.
       set this:pid:throttle:setpoint to target_speed.
 
-      lock steering to Heading(input_hdg, this:input:pitch).
+      // lock steering to Heading(mod(this:Heading() + this:input:heading, 360), this:input:pitch).
+      lock steering to Heading(this:input:heading, this:input:pitch). // THIS ONE
+      // lock steering to Heading(input_hdg, this:input:pitch). // THIS ONE
 
       // TODO: Find a way to make this work with this:pid:update()
       until dist < Autopilot_plane:default_landing_distance {
         set this:pid:pitch:setpoint to target_altitude.
         set this:input:pitch to this:pid:pitch:update(time:seconds, altitude).
         set this:input:throttle to this:pid:throttle:update(time:seconds, airspeed).
-        set input_hdg to 90 + pid_hdg:update(time:seconds, lat_err).
+        set this:input:heading to 90 + pid_hdg:update(time:seconds, lat_err). // AND THIS ONE
       }
 
       this:Land(dest).
@@ -161,14 +163,14 @@ declare global Autopilot_plane is lexicon(
       set warp to 0. 
 
       declare pid_hdg is pidloop(500, 1, 100, -15, 15).
-      declare input_hdg is choose 90 if dest = "KSC" else this:Heading().
+      declare input_hdg is 90.
 
       set this:pid:pitch:setpoint to 0.
       set this:pid:throttle:setpoint to 50.
       until ship:status = "LANDED" {
         set this:input:pitch to this:pid:pitch:update(time:seconds, alt:radar).
         set this:input:throttle to this:pid:throttle:update(time:seconds, airspeed).
-        set input_hdg to choose 90 + pid_hdg:update(time:seconds, lat_err) if dest = "KSC" else input_hdg.
+        set input_hdg to 90 + pid_hdg:update(time:seconds, lat_err).
         if alt:radar <= 2 { break. }
       }
 

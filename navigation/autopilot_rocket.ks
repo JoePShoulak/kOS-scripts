@@ -2,8 +2,15 @@
 
 runOncePath("0:/util/core.ks").
 runOncePath("0:/navigation/maneuvers.ks").
+runOncePath("0:/navigation/rendezvous.ks").
+runOncePath("0:/common/sequence.ks").
 
 declare crr is addons:career.
+
+// TODO: Convert all methods to be lexicons of size one, where the key is the sequence name, the value is the 
+// actual method delegate, and we can use the key names to list our mission sequences, before executing them afterwards. 
+// We will probably need to give the autopilot a reference to the line number or something to keep track of what to print when,
+//3 Or figure out how to have menu handle that
 
 declare global Autopilot_rocket is lexicon(
   "init", {
@@ -24,31 +31,35 @@ declare global Autopilot_rocket is lexicon(
       }
       if ship:availablethrust < (oldThrust - 10) {
         this:DoSafeStage(). wait 1.
-        lock throttle to 1.0. // FIXME
         declare global oldThrust to ship:availablethrust.
       }
     }).
 
     this:add("Launch", {
       print "Launching...".
-      lock steering to Heading(90, 75).
+      lock steering to Heading(90, 85).
       stage. 
       wait 3.
       set warpmode to "physics".
-      set warp to 3.
+      set warp to 1.
+      when ship:engines:length < 3 then { wait 1. set warp to 3. }
       lock steering to ship:srfprograde.
 
-      until apoapsis > 250e3 { this:Autostage(). }
+      until apoapsis > 120e3 { this:Autostage(). }
 
       lock throttle to 0.0.
 
-      wait until altitude > 70e3.
+      until altitude > 70e3 { this:Autostage(). }
       set warp to 0.
       wait until this:WarpSettled().
       CircularizeAtApoapsis().
-      lock throttle to 0.2.
-      wait until apoapsis - periapsis > 10e3.
+      wait until this:WarpSettled().
+      lock steering to ship:srfprograde.
+      lock throttle to 1.0.
+      wait until periapsis > 71e3. // FIXME
       lock throttle to 0.
+      wait until this:WarpSettled().
+      CircularizeAtApoapsis().
       wait until this:WarpSettled().
     }).
 
@@ -65,41 +76,58 @@ declare global Autopilot_rocket is lexicon(
       }
     }).
 
+    this:add("Rendezvous", {
+      parameter tgt.
+      set target to tgt.
+
+      print "Initiating rendezvous with " + tgt + "...".
+      // TOOD: Determine if we need to perform the Hohmann transfer or not
+      HohmannTransferToTarget().
+    }).
+
     this:add("BreakOrbit", {
       print "Returning...".
       parameter target_pe is 55e3. 
 
-      ChangePEAtAP(target_pe).
-      wait until this:WarpSettled().
+      if periapsis > target_pe {
+        ChangePEAtAP(target_pe).
+        wait until this:WarpSettled().
+      }
     }).
 
     this:add("Land", {
-      print "Landing...".
-      wait until this:WarpSettled().
-      wait 3. // FIXME: Needed?
-      warpto(time:seconds() + eta:periapsis).
-      wait until this:WarpSettled().
-      set warpmode to "physics".
-      set warp to 3.
-      lock steering to ship:srfretrograde.
-      wait until vang(ship:facing:forevector, ship:srfretrograde:forevector) < 1.
-      lock throttle to 1.0.
-      wait 1.
-      until ship:stagenum = 0 { if ship:engines[0]:flameout { stage.} }
+        print "Landing...".
+        wait until this:WarpSettled().
+        wait 3. // FIXME: Needed?
+        warpto(time:seconds() + eta:periapsis).
+        wait until this:WarpSettled().
+        set warpmode to "physics".
+        set warp to 3.
+        lock steering to ship:srfretrograde.
+        wait until vang(ship:facing:forevector, ship:srfretrograde:forevector) < 1.
+        lock throttle to 1.0.
+        wait 1.
+        until ship:stagenum = 0 { if ship:engines[0]:flameout { stage.} }
 
-      when alt:radar < 2000 then { chutes on. stage. }
+        when alt:radar < 2000 then { chutes on. stage. }
+        when alt:radar < 200 then { gear on. }
 
-      wait until status = "LANDED" or ship:status = "SPLASHED".
-    }).
+        wait until status = "LANDED" or ship:status = "SPLASHED".
+      }
+    ).
 
     this:add("Recover", {
+      wait until crr:isrecoverable(ship).
+      wait 3.
       wait until crr:isrecoverable(ship).
       crr:recovervessel(ship).
     }).
 
     // MISSIONS
 
-    this:add("LKOTourism", { this:Launch(). this:WaitForContract(). this:BreakOrbit(). this:Land(). this:Recover(). }).
+    this:add("Return", { this:BreakOrbit(). this:Land(). this:Recover(). }).
+    this:add("KerbinAlpha", { this:Launch(). this:Rendezvous("Kerbin Alpha"). }).
+    this:add("LKOTourism", { this:Launch(). this:WaitForContract(). this:Return(). }).
 
     return this.
   }
