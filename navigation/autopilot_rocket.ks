@@ -36,31 +36,34 @@ declare global Autopilot_rocket is lexicon(
     }).
 
     this:add("Launch", {
-      print "Launching...".
-      lock steering to Heading(90, 85).
-      stage. 
-      wait 3.
-      set warpmode to "physics".
-      set warp to 1.
-      when ship:engines:length < 3 then { wait 1. set warp to 3. }
-      lock steering to ship:srfprograde.
+      if ship:status = "PRELAUNCH" {
+        print "Launching...".
+        lock steering to Heading(90, 85).
+        lock throttle to 1.0.
+        stage. 
+        wait 3.
+        set warpmode to "physics".
+        set warp to 1.
+        when ship:engines:length < 3 then { wait 1. set warp to 3. }
+        lock steering to ship:srfprograde.
 
-      until apoapsis > 120e3 { this:Autostage(). }
+        until apoapsis > 120e3 { this:Autostage(). }
 
-      lock throttle to 0.0.
+        lock throttle to 0.0.
 
-      until altitude > 70e3 { this:Autostage(). }
-      set warp to 0.
-      wait until this:WarpSettled().
-      CircularizeAtApoapsis().
-      wait until this:WarpSettled().
-      lock steering to ship:srfprograde.
-      lock throttle to 1.0.
-      wait until periapsis > 71e3. // FIXME
-      lock throttle to 0.
-      wait until this:WarpSettled().
-      CircularizeAtApoapsis().
-      wait until this:WarpSettled().
+        until altitude > 70e3 { this:Autostage(). }
+        set warp to 0.
+        wait until this:WarpSettled().
+        CircularizeAtApoapsis().
+        wait until this:WarpSettled().
+        lock steering to ship:srfprograde.
+        lock throttle to 1.0.
+        wait until periapsis > 71e3. // FIXME
+        lock throttle to 0.
+        wait until this:WarpSettled().
+        CircularizeAtApoapsis().
+        wait until this:WarpSettled().
+      }
     }).
 
     this:add("WaitForContract", {
@@ -82,7 +85,7 @@ declare global Autopilot_rocket is lexicon(
 
       print "Initiating rendezvous with " + tgt + "...".
       // TOOD: Determine if we need to perform the Hohmann transfer or not
-      HohmannTransferToTarget().
+      Mission(list(Rendezvous())).
     }).
 
     this:add("BreakOrbit", {

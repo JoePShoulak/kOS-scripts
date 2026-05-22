@@ -77,7 +77,6 @@ function CalcHohmannInterceptTime {
   declare ship_speed_deg is 360 / ship:orbit:period.
   declare target_speed_deg is 360 / target:orbit:period.
   declare target_travel_deg is target_speed_deg * transfer_time.
-
  
   declare transfer_phase_angle is 180 + target_travel_deg.
   declare current_phase_angle is CalculatePhaseAngle(target).

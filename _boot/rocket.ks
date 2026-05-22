@@ -5,7 +5,6 @@ runOncePath("0:/navigation/autopilot_rocket.ks").
 
 declare AP is Autopilot_rocket:init().
 
-
 declare launch_options is list(
   CreateOption("LKO", AP:Launch@),
   CreateOption("LKO Tourism", AP:LKOTourism@),
