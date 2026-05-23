@@ -13,7 +13,9 @@ declare launch_options is list(
   CreateOption("Land", AP:Land@ )
 ).
 
-InitTerminal("Welcome to the " + ship:name + " kOS autopilot!").
+// InitTerminal("Welcome to the " + ship:name + " kOS autopilot!").
 
-if ship:status = "PRELAUNCH" { SequenceMenu(launch_options, 5). }
-else { SequenceMenu(launch_options). }
+// SequenceMenu(launch_options, 30).
+print("Connected!").
+wait 10.
+AP:Launch().
